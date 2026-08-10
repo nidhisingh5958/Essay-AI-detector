@@ -1,0 +1,28 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/next-env.d.ts
+
+# Dataset working directory (never commit raw/generated data — see docs/dataset.md)
+data/*
+!data/.gitkeep
+
+# ML artifacts / model weights
+*.pt
+*.bin
+*.safetensors
+
+# Experiment outputs (large/generated — configs are committed, raw outputs are not)
+experiments/**/results/
+reports/*
+!reports/.gitkeep
+
+# OS / editor
+.DS_Store
+.vscode/
