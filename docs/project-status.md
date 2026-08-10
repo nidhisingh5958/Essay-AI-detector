@@ -2,47 +2,60 @@
 
 ## Current Phase
 
-Phase 1 — Repository and Architecture (complete)
+Phase 2 — Text Preprocessing (complete)
 
 ## Completed
 
-- [x] Repository structure established (`backend/`, `frontend/`, `data/`,
-      `scripts/`, `experiments/`, `reports/`, `docs/`, `docs/decisions/`)
-- [x] Backend skeleton: FastAPI app with `/api/health`, config module,
-      one passing test (`backend/tests/test_health.py`)
-- [x] Frontend skeleton: Next.js (App Router) + TypeScript + Tailwind,
-      builds cleanly (`npm run build`), landing page with a functional
-      textarea (`components/EssayInput/`) and an intentionally-disabled
-      "Analyze" button (no backend endpoint exists to call yet)
-- [x] Documentation structure created: `architecture.md`, `methodology.md`,
-      `dataset.md`, `evaluation.md`, `failure-analysis.md`, `fairness.md`,
+- [x] Phase 1 — Repository structure, backend/frontend skeletons,
+      documentation scaffolding, DEC-001 through DEC-004 (see git history /
+      earlier revision of this file for the full Phase 1 checklist)
+- [x] Text normalization (`backend/app/services/text_normalizer.py`):
+      Unicode NFC normalization, line-ending normalization, control-
+      character stripping — deliberately preserves punctuation/quote style
+      as candidate features
+- [x] Input validation (`backend/app/services/validation.py`): rejects
+      empty/whitespace-only text and text over `Settings.max_essay_chars`
+- [x] Sentence segmentation (`backend/app/services/sentence_segmenter.py`):
+      spaCy `en_core_web_sm` statistical pipeline, returns sentences with
+      character offsets into the normalized text
+- [x] DEC-005 recorded: sentence segmentation approach and why regex/NLTK/
+      blank-spaCy alternatives were rejected
+- [x] 17 new tests covering empty input, whitespace-only input, very short
+      and very long essays, punctuation-heavy text (ellipses, multiple
+      exclamation/question marks), abbreviations, Unicode (accents, emoji),
+      duplicate sentences, and repeated phrases — all passing (22 total
+      across the backend)
+- [x] Documentation updated to reflect Phase 2: `architecture.md`,
       `decisions.md`, `decision-summary.md`, `final-decision-guide.md`,
-      `alternatives-considered.md`, this file
-- [x] Initial decision log: DEC-001 (FastAPI), DEC-002 (Next.js), DEC-003
-      (monorepo layout), DEC-004 (local LM as instrument only, never
-      classifier)
-- [x] Root README
+      root `README.md`
 
 ## In Progress
 
-- [ ] None — Phase 1 is complete. Phase 2 has not started.
+- [ ] None — Phase 2 is complete. Phase 3 has not started.
 
 ## Experiments
 
-None yet. No feature or model exists to experiment on.
+None yet. Phase 2 is preprocessing infrastructure, not a measurable
+feature/model choice — nothing here required an experiment (see DEC-005's
+Evidence section for why sentence segmentation didn't need one either).
 
 ## Current Known Problems
 
-- The application does not analyze essays yet — this is expected at
-  Phase 1, not a bug. The "Analyze" button is disabled deliberately.
+- The application still does not classify or score essays — Phase 2 only
+  produces normalized text and sentence boundaries. This is expected, not
+  a bug.
 - `docs/methodology.md`, `docs/dataset.md`, `docs/evaluation.md`,
-  `docs/failure-analysis.md`, and `docs/fairness.md` are intentionally
-  placeholders — they state what will be documented and when, and contain
-  no fabricated numbers or conclusions.
+  `docs/failure-analysis.md`, and `docs/fairness.md` remain intentional
+  placeholders — nothing in Phase 2 changes that.
+- The full `en_core_web_sm` pipeline (tagger, parser, attribute_ruler,
+  lemmatizer, ner, tok2vec) is loaded even though only parser-derived
+  sentence boundaries are used so far. This is intentional (see DEC-005:
+  the same pipeline will be reused for Phase 3 POS/dependency features),
+  not an oversight, but it does mean Phase 2 alone pays for pipeline
+  components it doesn't yet use.
 
 ## Decisions Pending
 
-- Sentence segmentation approach (Phase 2)
 - Which linguistic features to retain after measuring signal (Phase 3)
 - Local causal LM choice and loading/caching strategy (Phase 4)
 - Dataset sources and generation approach (Phase 5)
@@ -51,10 +64,18 @@ None yet. No feature or model exists to experiment on.
 
 ## Next Steps
 
-1. Phase 2: text normalization, sentence segmentation, input validation
-   (`backend/app/services/sentence_segmenter.py`), with tests covering
-   edge cases (empty input, very short/long essays, Unicode, punctuation-
-   heavy text).
-2. Record the sentence-segmentation approach as a decision once
-   alternatives are actually compared.
-3. Update this file at the end of Phase 2.
+1. Phase 3: linguistic feature extraction —
+   `backend/app/services/feature_extractor.py`:
+   - Sentence rhythm (length, variance, coefficient of variation,
+     punctuation distribution)
+   - Vocabulary (type-token ratio, moving-average TTR, rare-word ratio)
+   - Repetition (repeated n-grams, repeated sentence openings)
+   - POS/dependency features using the same spaCy pipeline already loaded
+     for segmentation
+2. Investigate which of these features actually carry signal before
+   committing to a final feature set (Section 6 of the project brief) —
+   this requires at least a small reference dataset, so Phase 3 and the
+   start of Phase 5 (dataset) may need to interleave in practice; record
+   that as a decision if/when it happens rather than silently reordering
+   phases.
+3. Update this file at the end of Phase 3.

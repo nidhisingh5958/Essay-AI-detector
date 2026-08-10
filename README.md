@@ -99,7 +99,8 @@ docs/        Architecture, methodology, dataset, evaluation, fairness,
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt   # full ML stack; Phase 1 only needs the top 3 packages
+pip install -r requirements.txt   # full ML stack; Phase 1 only needed the top 3 packages
+python -m spacy download en_core_web_sm   # needed for sentence segmentation (Phase 2) and later POS/dependency features (Phase 3)
 uvicorn app.main:app --reload --port 8000
 ```
 
@@ -163,13 +164,15 @@ for the planned methodology around second-language English writers and
 the constraint that no fairness claim will be made without an actual
 evaluation on appropriately labeled data.
 
-## Limitations (current, Phase 1)
+## Limitations (current, Phase 2)
 
-- The system does not analyze essays yet.
-- No ML dependencies (Transformers, PyTorch, spaCy, scikit-learn) are
-  installed in the working dev environment yet — only `fastapi`,
-  `uvicorn`, `pydantic`, `pytest`, `httpx` were installed to keep Phase 1
-  fast; the full `requirements.txt` will be exercised starting Phase 3/4.
+- The system does not classify or score essays yet — Phase 2 only
+  normalizes text, validates input, and splits essays into sentences with
+  character offsets.
+- spaCy (`en_core_web_sm`) is installed and used for sentence
+  segmentation. Transformers, PyTorch, and scikit-learn are still not
+  installed in the working dev environment — they are exercised starting
+  Phase 3/4.
 
 ## Decision-making approach
 

@@ -58,15 +58,26 @@ The scoring and evidence-generation stages are our own code, not an LLM
 call — see [decisions/DEC-004-no-llm-classifier.md](decisions/DEC-004-no-llm-classifier.md)
 for why.
 
-## What exists today (Phase 1)
+## What exists today (Phase 2)
 
 - **Backend** (`backend/app/`): FastAPI app with a single `/api/health`
-  endpoint. No analysis pipeline yet — `services/`, `models/`, `ml/`
-  directories exist as placeholders for Phases 2–7.
-- **Frontend** (`frontend/`): Next.js (App Router) + TypeScript + Tailwind.
-  A landing page with a working textarea (`components/EssayInput/`) and a
-  disabled "Analyze" button — there is no `/api/analyze` endpoint to call
-  yet.
+  endpoint (Phase 1). Phase 2 adds text preprocessing:
+  - `services/text_normalizer.py` — Unicode NFC normalization, line-ending
+    normalization, control-character stripping. Deliberately does not
+    touch punctuation/quote style, since those are candidate features.
+  - `services/validation.py` — rejects empty/whitespace-only input and
+    input over `Settings.max_essay_chars`.
+  - `services/sentence_segmenter.py` — splits normalized text into
+    sentences with character offsets, using a shared spaCy
+    (`en_core_web_sm`) pipeline. See
+    [decisions/DEC-005-sentence-segmentation.md](decisions/DEC-005-sentence-segmentation.md).
+
+  `models/`, `ml/` still exist as placeholders for Phases 5–8. There is
+  still no `/api/analyze` endpoint or orchestrating `analyzer.py` — Phase
+  2 output (sentences) is not yet wired into a request/response flow.
+- **Frontend** (`frontend/`): unchanged since Phase 1 — a landing page
+  with a working textarea (`components/EssayInput/`) and a disabled
+  "Analyze" button.
 - **Data/experiments/scripts/reports**: empty directories reserved for
   Phases 5, 10 per [project-status.md](project-status.md).
 
@@ -81,7 +92,9 @@ backend/
 │   ├── models/             # Pydantic request/response schemas (Phase 8)
 │   ├── services/
 │   │   ├── analyzer.py           # orchestrates the pipeline (Phase 7)
-│   │   ├── sentence_segmenter.py # Phase 2
+│   │   ├── text_normalizer.py    # exists (Phase 2)
+│   │   ├── validation.py         # exists (Phase 2)
+│   │   ├── sentence_segmenter.py # exists (Phase 2)
 │   │   ├── feature_extractor.py  # Phase 3
 │   │   ├── language_model.py     # Phase 4
 │   │   ├── scoring.py            # Phase 6

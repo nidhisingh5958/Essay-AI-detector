@@ -17,9 +17,28 @@ rather than a single unexplained "AI probability."
 
 A pasted essay (plain text) via the web UI. See `frontend/components/EssayInput/`.
 
-## 3. How is the essay processed? — Not yet implemented (Phase 2)
+## 3. How is the essay processed?
 
-## 4. How are sentences identified? — Not yet implemented (Phase 2)
+The raw pasted text is normalized before anything else looks at it
+(`backend/app/services/text_normalizer.py`): Unicode is canonicalized
+(NFC), line endings are unified to `\n`, and stray control characters are
+stripped. Punctuation, quote style, and casing are left untouched
+deliberately — those are candidate features for Phase 3, not things to
+"clean up." The text is then validated (`services/validation.py`): empty/
+whitespace-only input and input over the configured length limit
+(currently 20,000 characters) are rejected with a clear error.
+
+## 4. How are sentences identified?
+
+Normalized text is split into sentences using spaCy's `en_core_web_sm`
+statistical pipeline (`services/sentence_segmenter.py`), which uses a
+trained parser rather than naive punctuation splitting — so abbreviations
+like "Dr." or "U.S." don't create false sentence breaks. Each sentence
+carries its character offsets into the normalized text, which the UI will
+use for highlighting (Phase 9). See
+[decisions/DEC-005-sentence-segmentation.md](decisions/DEC-005-sentence-segmentation.md)
+for why this approach was chosen over regex splitting, NLTK, or a
+non-statistical spaCy pipeline.
 
 ## 5. What signals do we measure? — Not yet implemented (Phase 3/4)
 
@@ -59,12 +78,13 @@ calibration-level alternatives will be added as those phases complete.
 
 ## 19. What are the current limitations?
 
-At Phase 1, the honest answer is: the system does not analyze essays yet.
-The frontend accepts text but the "Analyze" action is disabled, and the
-backend exposes only a health check. See
+At Phase 2, the system can normalize, validate, and segment essay text
+into sentences, but it does not measure any features or produce any
+classification yet. The frontend accepts text but the "Analyze" action is
+still disabled, and the backend exposes no `/api/analyze` endpoint. See
 [project-status.md](project-status.md) for exactly what exists.
 
 ## 20. What would we improve next?
 
-Proceed to Phase 2 (text normalization, sentence segmentation) per
-[project-status.md](project-status.md).
+Proceed to Phase 3 (linguistic feature extraction: sentence rhythm,
+vocabulary, repetition) per [project-status.md](project-status.md).
