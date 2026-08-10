@@ -145,12 +145,21 @@ updated to note that length control needs an explicit mechanism (tighter
 `max_new_tokens` budgeting and/or post-hoc truncation to the nearest
 sentence boundary near the target), not just a phrased request.
 
-This remains short of validating the methodology at scale (diversity
-across many prompts, the surgical-splice mechanic's behavior with only
-adjacent-sentence context as specified in DEC-011, near-duplicate rates,
-polish-category diff alignment) — that is still EXP-DATA-001's job, not
-yet run. Status stays **Provisional** for that reason, but is now backed
-by real evidence rather than none.
+**EXP-DATA-001 pilot, executed 2026-08-10** (60 real samples; full
+report: [reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md)):
+model quality itself was **good** for full-essay generation (7/10 passed
+QC cleanly, the other 3 only flagged by an unrelated QC check bug — see
+DEC-011's Evidence) and for the surgical-splice rewrite categories
+(6/10 and 9/10 passed cleanly). Zero near-duplicates across 10 full_ai
+generations. The categories that failed heavily (`light_polish`/
+`moderate_polish`, 70% structure-drift) are **not attributed to this
+model's quality** in isolation — the pilot could not distinguish "model
+can't do this" from "the whole-essay-instruction methodology doesn't fit
+what any model of this size will reliably do" (DEC-011's revisit plan
+calls for testing a methodology fix before concluding the model needs to
+change). Status stays **Provisional**: the model choice is validated for
+full-generation and surgical-splice use; it is not yet validated (or
+ruled out) for the polish categories specifically.
 
 ## Trade-offs
 
@@ -197,10 +206,11 @@ Negative:
 
 ## Implementation
 
-Not yet — no generation code has been written or run. This decision
-precedes `scripts/generate_samples.py` (not yet created).
+`scripts/qwen_generate.py` (pilot-scale generation wrapper). The
+production version (`scripts/generate_samples.py`) doesn't exist yet.
 
 ## Tests / Experiments
 
-None yet. First verification will be part of the not-yet-run
-EXP-DATA-001 pilot (`experiments/EXP-DATA-001-generation-pilot/`).
+`EXP-DATA-001` — executed 2026-08-10, 60 real samples. Results:
+[reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md). See DEC-011 for
+the mixed-category-specific findings.

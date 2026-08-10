@@ -26,8 +26,8 @@ Consequences, Revisit When, Implementation, Tests/Experiments.
 | [DEC-007](decisions/DEC-007-local-language-model-choice.md) | Local LM choice: distilgpt2 | Accepted |
 | [DEC-008](decisions/DEC-008-lm-scoring-method.md) | LM scoring: whole-essay single pass, not per-sentence | Accepted |
 | [DEC-009](decisions/DEC-009-human-dataset-source.md) | Human dataset source: PERSUADE 2.0 + ELLIPSE | Provisional |
-| [DEC-010](decisions/DEC-010-machine-generation-model.md) | Machine text generation model: Qwen2.5-1.5B-Instruct | Provisional |
-| [DEC-011](decisions/DEC-011-mixed-text-generation.md) | Mixed/AI-assisted text generation methodology | Provisional |
+| [DEC-010](decisions/DEC-010-machine-generation-model.md) | Machine text generation model: Qwen2.5-1.5B-Instruct | Provisional (pilot-tested) |
+| [DEC-011](decisions/DEC-011-mixed-text-generation.md) | Mixed/AI-assisted text generation methodology | Provisional — partially invalidated by pilot |
 
 This table grows as later phases introduce feature-selection, scoring,
 calibration, dataset, and fairness-methodology decisions.

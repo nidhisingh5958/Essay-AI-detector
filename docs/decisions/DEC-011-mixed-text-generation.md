@@ -1,7 +1,13 @@
 # DEC-011 — Mixed/AI-Assisted Text Generation Methodology
 
 ## Status
-Provisional
+Provisional — **partially invalidated by EXP-DATA-001 pilot evidence**
+(2026-08-10). The surgical-splice mechanism (sentence/paragraph rewrite)
+is confirmed working well. The whole-essay-instruction-plus-diff
+mechanism for light/moderate polish is **not working as designed** —
+see "Pilot Findings" below. Do not treat the polish-category design in
+this record as validated; it needs the revision described there before
+further use.
 
 ## Date
 2026-08-10
@@ -144,12 +150,50 @@ inventing a false-precision label for them.
 
 ## Evidence
 
-None yet — this is a design decision preceding any generation code or
-pilot run. The similarity threshold for the diff-based categories and the
-sentence-count-alignment tolerance for rejecting `structure_drift` samples
-are **not yet numerically fixed**; they are exactly the kind of thing
-EXP-DATA-001's pilot should surface real examples for, rather than picking
-a number now with no data to check it against.
+**Original (pre-pilot):** None — this was a design decision preceding any
+generation code or pilot run.
+
+**EXP-DATA-001 pilot, executed 2026-08-10** (full report:
+[reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md)), 10 seed
+essays × 6 categories = 60 real samples against the actual acquired
+PERSUADE corpus and Qwen2.5-1.5B-Instruct:
+
+- **Surgical-splice categories confirmed working well**: `sentence_
+  rewrite_single` passed cleanly for 6/10 (2 more only flagged by a QC
+  check bug, not a real problem — see below); `paragraph_rewrite_single`
+  passed cleanly for 9/10. The `splice_resegmentation_mismatch` QC check
+  (re-segmenting the spliced essay and confirming sentence count is
+  unchanged) caught 2 real edge cases correctly, validating that check's
+  design.
+- **Whole-essay-instruction-plus-diff categories failed at a high rate,
+  for a real, substantive reason, not noise**: `light_polish` and
+  `moderate_polish` both showed **70% structure_drift** (7/10 families
+  each) — manually confirmed as genuine sentence-count-changing
+  consolidation by the model, not a segmentation artifact (see
+  EXP-DATA-001 §7 for a quoted before/after example). Even among the 3/10
+  families per category that *did* align, similarity ratios were
+  continuous/spread (0.07–0.85 for light, 0.09–0.97 for moderate) with no
+  visible separation between "touched" and "untouched" sentences — no
+  pair scored a perfect 1.0 in light_polish. **This pilot found no
+  evidence a numeric similarity threshold would be meaningful for this
+  category as currently designed** — the assumption that "light polish"
+  produces a recoverable mix of touched/untouched sentences did not hold.
+- Length control also failed for these two categories specifically
+  (light_polish ranged 100–380 words against ~250-word seeds;
+  moderate_polish consistently undershot, median 156.5) — a related but
+  separate problem from the alignment failure.
+- A QC implementation bug was found and diagnosed (not a generation
+  problem): `check_prompt_leakage` compared against the *entire*
+  instruction, including the embedded essay prompt — essays legitimately
+  referencing their own prompt's wording triggered false positives on all
+  3 `full_ai` samples it flagged. Confirmed via a corrected re-check.
+- Zero near-duplicate samples found; zero metadata-schema violations;
+  zero leakage-invariant violations (checked programmatically, not just
+  assumed from the split-before-generation ordering).
+
+Per this pilot's explicit instructions, **no threshold was invented to
+paper over the structure_drift/diff findings** — the recommended fix
+(below) is a mechanism change, not a parameter tune.
 
 ## Trade-offs
 
@@ -177,21 +221,50 @@ Negative:
 
 ## Revisit When
 
-1. EXP-DATA-001 pilot provides real examples to set the diff-similarity
-   threshold and the structure-drift rejection tolerance numerically.
+1. ~~EXP-DATA-001 pilot provides real examples to set the diff-similarity
+   threshold~~ — **done, 2026-08-10: the pilot found no basis for setting
+   one** (see Evidence). What needs revisiting instead, before any further
+   generation:
+   - **Replace the exact-count-match alignment rule** with a proper
+     sequence-alignment algorithm (`difflib.SequenceMatcher` operating on
+     the sentence *list*, using `get_opcodes()` to find equal/replace/
+     insert/delete blocks) instead of requiring identical sentence counts.
+     This should recover usable, if block-level rather than strictly 1:1,
+     ground truth for most of the currently-rejected 70%, instead of
+     discarding them outright. **Proposed, not implemented** — implementing
+     and re-piloting this is explicitly out of scope for the point this
+     decision was updated at (EXP-DATA-001's stop condition).
+   - **Add a dedicated length-control mechanism** for `light_polish`/
+     `moderate_polish` (they currently reuse `full_ai`'s token budgeting,
+     which doesn't fit their "stay close to original length" goal).
+   - **Fix `check_prompt_leakage`** to exclude prompt/target-text content
+     from its comparison (an implementation bug, not a methodology
+     question — see Evidence).
+   - **After** those fixes, run a small follow-up pilot on just the
+     polish categories before deciding whether the model itself
+     (escalating to Phi-3.5-mini-instruct, DEC-010) also needs to change
+     — test the methodology fix and the model change one at a time, not
+     together, so it's clear which one (if either) actually helped.
 2. If paragraph boundaries turn out not to survive in the acquired
-   corpus's raw text (open item, see Limitations) — the paragraph-level
-   categories would need to fall back to a different definition of
-   "paragraph" (e.g. a fixed sentence-count window) or be dropped, and
-   this record updated accordingly.
+   corpus's raw text — **resolved, 2026-08-10: they do, in ~95% of
+   essays** (see DEC-009's inspection update and
+   [reports/dataset-inspection.md](../../reports/dataset-inspection.md)).
+   The surgical paragraph-rewrite mechanism using `\n\n` boundaries is
+   confirmed working (9/10 passed in the pilot).
 
 ## Implementation
 
-Not yet — no generation/splicing code has been written. Precedes
-`scripts/generate_mixed_samples.py` (not yet created). Full mechanism
-description in [generation-methodology.md](../generation-methodology.md).
+`scripts/run_exp_data_001.py` (pilot orchestrator), `scripts/generation_utils.py`
+(pure logic: `align_and_diff_sentences`, `pick_rewrite_sentence_index`,
+`pick_rewrite_paragraph_index`, QC checks), `scripts/qwen_generate.py`
+(model wrapper). The full-scale versions
+(`scripts/generate_samples.py`, `scripts/generate_mixed_samples.py`) do
+not exist yet and should incorporate the alignment-algorithm and
+length-control fixes above before being written, not before.
 
 ## Tests / Experiments
 
-None yet. `experiments/EXP-DATA-001-generation-pilot/` (design only, not
-run).
+`scripts/tests/test_generation_utils.py` (19 tests, pure-logic fixtures).
+`EXP-DATA-001` — **executed 2026-08-10**, 60 real samples. Full results:
+[reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md). Design doc:
+`experiments/EXP-DATA-001-generation-pilot/README.md`.

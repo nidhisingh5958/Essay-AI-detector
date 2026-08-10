@@ -2,9 +2,9 @@
 
 ## Current Phase
 
-Phase 5C — Live Human Corpus Acquisition & Inspection (complete: human
-corpus acquired, license-verified, and inspected; awaiting review before
-any AI/mixed sample generation)
+EXP-DATA-001 pilot complete (executed for real). **Stopped for review**
+per explicit instruction — no scaling, no detector work, no EXP-003
+started.
 
 ## Completed
 
@@ -16,133 +16,131 @@ any AI/mixed sample generation)
       (DEC-006, Provisional)
 - [x] Phase 4 — Local language-model instrumentation via `distilgpt2`
       (DEC-007, DEC-008)
-- [x] Phase 5, step 1 — Human dataset source evaluation (7 candidates
-      researched, [DEC-009](decisions/DEC-009-human-dataset-source.md)
-      recorded)
-- [x] Phase 5, step 2 — acquisition pipeline built and unit-tested
-- [x] Phase 5B — machine/mixed generation design: DEC-010, DEC-011,
-      [generation-methodology.md](generation-methodology.md),
-      EXP-DATA-001 design (not run)
-- [x] Qwen2.5-1.5B-Instruct downloaded and smoke-tested (2 generations,
-      not the pilot) — confirmed viable, found and documented a
-      length-control gap
-- [x] **Phase 5C — live acquisition and inspection (this update):**
-  - **Fixed a real bug found via live data, not research:**
-    `verify_license()` used `dataset.licenseName` based on web research
-    of the `kaggle` package's API; the actual installed package exposes
-    `dataset.license_name` (snake_case). Confirmed by inspecting the real
-    `ApiDataset` object's attributes. Fixed; the refuse-on-mismatch logic
-    itself was not changed. Test fixtures updated to match; full suite
-    re-run and passing.
-  - **Live license verification, both passed:**
-    - PERSUADE 2.0 (`nbroad/persaude-corpus-2`): live license
-      `CC BY-NC-SA 4.0` — **resolves** the discrepancy DEC-009's research
-      found (Kaggle's authoritative metadata matches the GitHub repo, not
-      the Learning Agency Lab site's "CC BY 4.0" framing).
-    - ELLIPSE Corpus (`mpware/ellipse-corpus`): live license
-      `CC BY-NC-SA 4.0`, exactly as expected.
-  - **Both datasets downloaded**: `data/raw/persuade_2.0/` (852MB — see
-    file-naming finding below), `data/raw/ellipse_corpus/` (15MB), both
-    gitignored, neither committed.
-  - **Full inspection performed** — see
-    [reports/dataset-inspection.md](../reports/dataset-inspection.md) for
-    complete findings. Highlights:
-    - PERSUADE's largest file (`persuade_corpus_1.0.csv`, 852MB) is a
-      *different*, discourse-element-annotated release, not what our
-      pipeline uses — the real essay-level file is
-      `persuade_2.0_human_scores_demo_id_github.csv` (25,996 essays, 15
-      prompts, each with full instruction text).
-    - **Corpus data-quality bug found:** PERSUADE's `word_count` column
-      disagrees with a direct recount for ~5% of rows (worst case: 48x
-      off — 14,818 claimed vs. 305 actual). Our pipeline already
-      recomputes word counts independently (Phase 3), so this doesn't
-      block anything, but the column itself must never be trusted.
-    - 4 PERSUADE `essay_id_comp` values collide across different essays
-      (source-data bug, not duplicate content).
-    - **Paragraph boundaries confirmed preserved** (blank-line markers)
-      in ~95% of essays in both corpora — resolves the open question from
-      Phase 5B about paragraph-level mixed-sample feasibility.
-    - **New finding:** PERSUADE itself has an `ell_status` field (~2,244
-      "Yes" / ~22,451 "No") — not previously confirmed.
-    - **Correction:** ELLIPSE has 44 unique prompts, not the ~29
-      estimated from web research — `dataset-source-comparison.md`
-      updated in place with this correction, old estimate left visible
-      alongside it.
-    - **Refined fairness methodology:** ELLIPSE is 100% ELL by corpus
-      design, so it cannot supply a non-ELL comparison group alone. Plan
-      now uses (a) ELLIPSE's continuous proficiency scores for a
-      within-ELL-population gradient test, and (b) PERSUADE's own
-      `ell_status` for a same-corpus coarse comparison.
-    - Sensitive metadata inventoried for both corpora; recommendation is
-      to exclude gender/race/economic-status/disability/grade from the
-      working ML dataset entirely, keeping only `ell_status` and
-      proficiency scores in a separate evaluation-only table.
-    - Near-duplicate rates negligible in both corpora (0 exact dupes
-      either corpus; 4 near-dupe rows in PERSUADE, 0 in ELLIPSE).
-  - **[DEC-009](decisions/DEC-009-human-dataset-source.md) updated:
-    Provisional → Accepted**, with a "Live Verification & Inspection
-    Update" section added (original research-based Evidence preserved,
-    not overwritten).
-  - `scripts/inspect_corpus.py` written (word-count discrepancy,
-    paragraph-marker coverage, near-duplicate heuristic, duplicate-ID
-    report) with 9 tests against synthetic fixtures — never the real
-    files.
-  - Found (and left alone, per instructions) a redundant credential file
-    at `.kaggle/kaggle.json` inside the repo itself — confirmed gitignored
-    and never tracked/committed, but flagged as a hygiene item (loose
-    file permissions, redundant with `~/.kaggle/access_token` which is
-    what actually authenticated).
-  - Documentation updated: `dataset.md`, `dataset-source-comparison.md`,
-    `methodology.md`, `final-decision-guide.md`, `decision-summary.md`,
-    this file.
-  - All tests still passing: 43 backend + 14 scripts (5 acquisition-gate
-    + 9 inspection-utility).
+- [x] Phase 5, steps 1–2 — Human dataset source evaluation + acquisition
+      pipeline built ([DEC-009](decisions/DEC-009-human-dataset-source.md))
+- [x] Phase 5B — Machine/mixed generation design
+      ([DEC-010](decisions/DEC-010-machine-generation-model.md),
+      [DEC-011](decisions/DEC-011-mixed-text-generation.md),
+      [generation-methodology.md](generation-methodology.md))
+- [x] Qwen2.5-1.5B-Instruct downloaded and smoke-tested
+- [x] **Phase 5C — Live acquisition + inspection:**
+  - Repo-local `.kaggle/kaggle.json` deleted (redundant with
+    `~/.kaggle/access_token`, which is what actually authenticates);
+    confirmed via `git ls-files` that no credential was ever tracked.
+  - Fixed a real bug found via live data: `dataset.licenseName` (assumed
+    from research) → `dataset.license_name` (the actual `kaggle` package
+    attribute). Refuse-on-mismatch logic itself unchanged.
+  - **Both corpora live-license-verified and acquired**: PERSUADE 2.0 and
+    ELLIPSE, both `CC BY-NC-SA 4.0` — resolving DEC-009's open PERSUADE
+    discrepancy.
+  - **Full inspection performed** —
+    [reports/dataset-inspection.md](../reports/dataset-inspection.md).
+    Key findings: PERSUADE's real essay file is
+    `persuade_2.0_human_scores_demo_id_github.csv` (not the 852MB
+    discourse-annotated `_1.0` file); its `word_count` column is
+    unreliable for ~5% of rows (worst case 48x off); paragraph boundaries
+    (`\n\n`) survive in ~95% of essays in both corpora; PERSUADE itself
+    carries an `ell_status` field; ELLIPSE has 44 prompts (not ~29 as
+    earlier research estimated, corrected in place); both corpora
+    negligibly duplicated.
+  - **[DEC-009](decisions/DEC-009-human-dataset-source.md): Provisional
+    → Accepted.**
+- [x] **EXP-DATA-001 pilot — executed for real, 2026-08-10** (this
+      update). 10 seed PERSUADE essays × 6 categories (human, full_ai,
+      light_polish, moderate_polish, sentence_rewrite_single,
+      paragraph_rewrite_single) = 60 samples. Full results:
+      [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md).
+  - New code: `scripts/generation_utils.py` (19 tests, pure logic:
+    length budgeting, sentence-diff alignment, seed selection, family-
+    split assignment, QC checks), `scripts/qwen_generate.py` (model
+    wrapper), `scripts/extract_prompts.py` (2 tests; run for real against
+    PERSUADE, wrote 15 prompt files to `data/prompts/persuade_2.0/`),
+    `scripts/run_exp_data_001.py` (orchestrator), `scripts/analyze_exp_data_001.py`
+    (post-hoc analysis).
+  - **What worked:** full-essay generation (7/10 clean QC pass, 3/10
+    only flagged by a QC bug — see below) and surgical-splice rewrites
+    (sentence: 6/10 clean, 9/10 including a real correctness catch;
+    paragraph: 9/10 clean). Zero near-duplicates. Zero metadata-schema
+    violations. Zero leakage-invariant violations (family/split
+    consistency verified programmatically across all 60 samples).
+  - **What didn't work:** `light_polish`/`moderate_polish` (whole-essay-
+    instruction-plus-diff mechanism) failed at **70% structure-drift**
+    — the model consolidates/restructures sentences despite explicit
+    instructions not to (confirmed via manual inspection, not a
+    segmenter bug). Even the 30% that aligned showed a continuous,
+    non-separable similarity distribution — **no diff-similarity
+    threshold could be responsibly set from this data**, so none was
+    invented.
+  - **QC bug found and diagnosed:** `check_prompt_leakage` compared
+    against the whole instruction (including the embedded essay prompt),
+    flagging essays for legitimately discussing their own prompt. All 3
+    flagged `full_ai` samples were false positives on manual review.
+  - **Real correctness catch validated:** `splice_resegmentation_mismatch`
+    QC check caught 2 genuine edge cases (informal run-on student
+    writing causing re-segmentation to disagree after a splice) and
+    correctly rejected them rather than producing wrong ground truth.
+  - **[DEC-011](decisions/DEC-011-mixed-text-generation.md) updated:**
+    status changed to "Provisional — partially invalidated by pilot
+    evidence." Proposed fix (not implemented): replace exact-sentence-
+    count-match alignment with `difflib.SequenceMatcher`-based sequence
+    alignment on sentence lists; add dedicated length control for polish
+    categories; fix the prompt-leakage check's scope.
+  - **[DEC-010](decisions/DEC-010-machine-generation-model.md) updated:**
+    model quality confirmed good where cleanly tested (full generation,
+    surgical splice); polish-category failures not yet attributable to
+    the model specifically vs. the methodology — flagged as needing a
+    one-variable-at-a-time follow-up test.
+  - Per instructions, **no threshold was invented to force a passing
+    result**, and **no regeneration was attempted to make the numbers
+    look better** — the methodology problem is documented and a fix is
+    proposed, not silently patched.
 
 ## In Progress
 
-- [ ] **Awaiting user review of Phase 5C findings** before any AI/mixed
-      sample generation, per explicit instruction to stop here.
-- [ ] EXP-DATA-001 pilot execution — unblocked in principle (corpus
-      acquired, model downloaded) but explicitly not run pending review.
-- [ ] `scripts/extract_prompts.py` — can now be written for real (prompt
-      text confirmed available and cleanly mappable in PERSUADE; ELLIPSE
-      has only short prompt titles, no full instruction text).
-- [ ] Cleaning/deduplication/leakage-safe-splitting scripts — not written
-      yet; informed by the real data-quality findings above (handle the
-      4 ID collisions, the `ell_status` blank-string-vs-NaN
-      inconsistency, exclude sensitive demographic columns).
+- [ ] **Stopped for review, as explicitly instructed.** Not scaling the
+      dataset, not training/evaluating a detector, not starting EXP-003.
+- [ ] Implementing the proposed DEC-011 alignment fix (sequence-based
+      diffing) — proposed, not started.
+- [ ] Adding dedicated length control for polish categories — proposed,
+      not started.
+- [ ] Fixing `check_prompt_leakage`'s scope — proposed, not started.
+- [ ] A follow-up pilot on just the polish categories, after the above
+      fixes — not started.
 
 ## Experiments
 
-- `EXP-DATA-001` (generation pipeline pilot) — **designed, not run.**
+- `EXP-DATA-001` — **executed 2026-08-10.** Results:
+  [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md). Data-generation-
+  pipeline validation only; no detector accuracy claims made or implied.
 
 ## Current Known Problems
 
-- No AI/mixed sample has been generated. No train/validation/test split
-  exists yet.
-- DEC-010 and DEC-011 remain Provisional — a 2-generation smoke test is
-  not pilot-scale validation.
-- The diff-similarity threshold and structure-drift tolerance for the
-  polish-category mixed samples are still unset, deferred to
-  EXP-DATA-001.
+- Light/moderate polish mixed-sample categories are **not usable as
+  currently designed** — see DEC-011.
+- `check_prompt_leakage` produces false positives when the instruction
+  embeds prompt/target text the output is expected to reference — fix
+  proposed, not applied.
+- No dedicated length-control mechanism exists for polish categories.
+- `generation_model_revision` metadata falls back to the bare model name
+  rather than a pinned commit SHA — minor reproducibility gap.
+- Raw PERSUADE text contains non-breaking-space characters (`\xa0`) not
+  fully handled by `text_normalizer.py` — cosmetic, seen in a couple of
+  spliced pilot outputs.
 - PERSUADE's `word_count` column and 4 duplicate `essay_id_comp` values
-  need explicit handling in any preprocessing code (documented, not yet
-  fixed in code since no processed dataset has been built yet).
-- Both corpora remain a domain mismatch with real admissions essays
-  (unchanged conclusion, now on firmer evidence).
-- A redundant, loosely-permissioned Kaggle credential file exists inside
-  the repo at `.kaggle/kaggle.json` (gitignored, never committed) —
-  hygiene item, not a leak.
-- The application still does not classify or score essays.
+  still need explicit handling in future preprocessing code (documented
+  since Phase 5C, unchanged).
+- The application still does not classify or score essays — none of this
+  phase's work touches the detector itself.
 
 ## Decisions Pending
 
-- Whether Qwen2.5-1.5B-Instruct's actual output quality is sufficient at
-  pilot scale (DEC-010, deferred to EXP-DATA-001)
-- Diff-similarity threshold / structure-drift tolerance (DEC-011,
-  deferred to EXP-DATA-001)
-- Train/validation/test split ratios/stratification specifics (the
-  family-level leakage invariant is fixed; exact ratios are not)
+- Whether to implement the DEC-011 sequence-alignment fix before or
+  alongside a Phi-3.5-mini-instruct follow-up test (DEC-010 recommends
+  testing one variable at a time)
+- Diff-similarity threshold for polish categories — still open, now with
+  a clearer path (fix alignment first, then re-examine)
+- Train/validation/test split ratios/stratification specifics beyond the
+  family-level invariant (already fixed and verified working)
 - Which Phase 3/4 features are actually retained once EXP-002/EXP-003 can
   be run
 - Scoring/calibration method (Phase 6)
@@ -150,15 +148,13 @@ any AI/mixed sample generation)
 
 ## Next Steps (pending review — not started)
 
-1. User reviews Phase 5C findings (this update + the inspection report)
-   and either approves proceeding to EXP-DATA-001 or requests changes.
-2. Write `scripts/extract_prompts.py` against the real PERSUADE
-   `prompt_name`/`assignment` columns (and ELLIPSE's `prompt` column,
-   noting its lack of full instruction text).
-3. Run EXP-DATA-001 pilot (10 seed essays × 6 categories), using real
-   prompts and the now-confirmed paragraph-boundary convention.
-4. Use pilot findings to fix the diff-similarity threshold and confirm/
-   revise DEC-010's model choice; update both decisions accordingly.
-5. Only after pilot review: design the cleaning/deduplication/leakage-
-   safe-splitting scripts, informed by the specific data-quality issues
-   this inspection found.
+1. User reviews EXP-DATA-001 findings and the proposed DEC-011 fix.
+2. If approved: implement the `difflib`-based sequence-alignment
+   redesign for `light_polish`/`moderate_polish`, add dedicated length
+   control, fix `check_prompt_leakage`'s scope.
+3. Run a small follow-up pilot on just the polish categories to confirm
+   the fix works before considering a model change.
+4. Only after that: consider scaling generation, which remains a
+   separate, explicit decision — not an automatic consequence of a
+   passing pilot.
+5. Update this file at each step.

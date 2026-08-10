@@ -1,9 +1,11 @@
 # EXP-DATA-001 — Generation Pipeline Pilot
 
 ## Status
-**Designed, not run.** No generation has occurred. This is a design
-document, written to be reviewed before any pilot execution — not a
-report of results.
+**Executed 2026-08-10.** Full results: [reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md).
+This document is preserved as the pre-registered design (objective,
+hypothesis, planned scope) — see the report for what actually happened
+and the "Scope note" below for one deliberate change from the original
+plan.
 
 ## Objective
 
@@ -26,18 +28,32 @@ generation-methodology.md), and carry sentence-level ground truth that
 actually matches what was requested (i.e., a `sentence_rewrite_single`
 sample really only has one sentence's worth of text meaningfully changed).
 
-This is a hypothesis to be checked, not assumed — if it fails, DEC-010
-and/or DEC-011 get revisited (both already say so explicitly in their
-"Revisit When" sections).
+**Result: partially confirmed, partially refuted** — see
+[reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md) §14. The
+surgical-splice half of the hypothesis held; the whole-essay-diff half
+did not (70% structure-drift rate for light/moderate polish). DEC-011 has
+been updated accordingly, not left to silently describe an unvalidated
+design.
 
 ## Dataset / version
 
-Human seed essays: 10, drawn from PERSUADE 2.0 **once acquisition
-(DEC-009) has actually succeeded** — this experiment cannot run before
-that. Not yet possible; blocked on Kaggle credentials
-(see [project-status.md](../../docs/project-status.md)).
+Human seed essays: 10, drawn from the actually-acquired PERSUADE 2.0
+corpus (`data/raw/persuade_2.0/persuade_2.0_human_scores_demo_id_github.csv`,
+DEC-009, Accepted), filtered to `task == "Independent"`.
 
-## Planned sample set
+## Scope note (deviation from the original plan, made deliberately)
+
+The original plan below listed 6 *generated* categories (including
+`heavy_revision`) plus the 10 human originals (~70 samples). The
+instruction that authorized running this pilot specified a tighter scope:
+**human original counted as one of 6 total categories** (human, full_ai,
+light_polish, moderate_polish, sentence_rewrite_single,
+paragraph_rewrite_single) — 60 samples total, `heavy_revision` and the
+`_multi` variants deferred. The pilot was executed against that tighter,
+explicitly-authorized scope, not the originally-sketched one. Noted here
+so the discrepancy is visible rather than silently resolved.
+
+## Planned sample set (original sketch — see Scope note for what actually ran)
 
 For each of the 10 seed essays, generate:
 
@@ -53,57 +69,68 @@ For each of the 10 seed essays, generate:
 60 generated/derived samples total, plus the 10 existing human
 originals. (The full taxonomy in generation-methodology.md also includes
 `sentence_rewrite_multi` and `paragraph_rewrite_multi` — omitted from
-this pilot to keep it small, consistent with the "10 of each" scale
-requested for this phase; they'll be exercised once the pilot validates
-the core mechanism.)
+this pilot to keep it small; they remain deferred, along with
+`heavy_revision`, to a future pilot iteration.)
 
-## Configuration (planned)
+## Configuration (as actually run)
 
-- Model: Qwen2.5-1.5B-Instruct, revision to be pinned and recorded at
-  actual run time (not yet downloaded).
-- Generation config varies per sample per Section 7 of
-  generation-methodology.md (temperature/top_p/seed), logged per sample.
-- Length tolerance: ±15% of seed essay word count (starting value, to be
-  checked against pilot results, not assumed correct).
+- Model: Qwen2.5-1.5B-Instruct (`generation_model_revision` recorded per
+  sample; falls back to the bare model name rather than a pinned commit
+  SHA — noted as a minor reproducibility gap in the report).
+- Generation config varied per sample (temperature/top_p fixed per
+  category, unique seed per sample) — see report §4.
+- Length tolerance: ±15% of seed essay word count for `full_ai`
+  (worked reasonably); no dedicated tolerance mechanism existed yet for
+  the polish categories, which the report identifies as a gap (§15).
 
-## What the pilot will inspect (not yet performed)
+## What the pilot inspected
 
-1. **Generation quality** — manual read of a sample of outputs per
-   category; does `light_polish` actually read as light, does
-   `heavy_revision` preserve the original's meaning and argument?
-2. **Length distribution** — target vs. actual length per sample;
-   whether the ±15% tolerance is workable or needs adjustment.
-3. **Transformation realism** — do the surgical-splice categories read
-   coherently at the splice boundary given only adjacent-sentence
-   context (a documented risk in DEC-011)?
-4. **Metadata correctness** — every record validates against the schema
-   in generation-methodology.md Section 9; `modified_spans` offsets
-   correctly slice the final text.
-5. **Sentence-level provenance accuracy** — for surgical-splice samples,
-   confirm the spliced sentence(s) are exactly and only the ones marked
-   in `modified_spans`. For diff-based samples, manually check whether
-   the diff-based labeling looks right, and use these examples to
-   actually set the similarity threshold and structure-drift tolerance
-   that DEC-011 deferred.
-6. **Duplicate rates** — near-duplicate check among the 10 `full_ai`
-   samples (several may share a prompt).
+1. **Generation quality** — manual read of outputs per category; see
+   report §12–14.
+2. **Length distribution** — target vs. actual length per sample; see
+   report §6, §15.
+3. **Transformation realism** — surgical-splice categories read
+   coherently; see report §12.
+4. **Metadata correctness** — all 60 records validated against the
+   schema, zero missing fields; see report §11.
+5. **Sentence-level provenance accuracy** — 33 `modified_spans` checked,
+   zero invalid; the `splice_resegmentation_mismatch` QC check caught 2
+   real edge cases; see report §10, §13. The diff-similarity threshold
+   was **not** set — the pilot found no basis for one (report §7, §16).
+6. **Duplicate rates** — zero near-duplicates found; see report §8.
 
-## Explicit non-goals
+## Explicit non-goals (honored)
 
-- No detector/classifier is run against this pilot's output.
-- No accuracy, precision, recall, or "the detector works" claim will be
-  made from this experiment.
-- No large-scale generation follows automatically from a successful
-  pilot — scaling up is a separate, explicit decision after review.
+- No detector/classifier was run against this pilot's output.
+- No accuracy, precision, recall, or "the detector works" claim is made.
+- No large-scale generation follows automatically — scaling remains a
+  separate, explicit decision pending review of the report's
+  recommendations.
 
 ## Result
 
-Not yet run.
+See [reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md) in full.
+Summary: full-generation and surgical-splice categories work well;
+whole-essay-instruction polish categories do not, for a real and
+diagnosed reason (model consolidates sentences despite instructions not
+to), not random noise.
 
 ## Conclusion
 
-Not yet run.
+The pipeline is not ready to scale as originally designed. Surgical-splice
+categories (`sentence_rewrite_single`, `paragraph_rewrite_single`) and
+`full_ai` are validated and ready. The polish categories need a mechanism
+change (proposed: sequence-alignment instead of exact-count matching,
+plus dedicated length control) before they can be trusted — not a
+threshold tune, which this pilot explicitly found no basis for.
 
 ## Resulting decision
 
-None yet — pending an actual pilot run and review.
+[DEC-011](../../docs/decisions/DEC-011-mixed-text-generation.md) updated:
+status changed to "Provisional — partially invalidated by pilot evidence,"
+Evidence section rewritten with real findings, Revisit When section
+rewritten with concrete next steps (not yet implemented).
+[DEC-010](../../docs/decisions/DEC-010-machine-generation-model.md)
+updated: Evidence section notes the model performed well where tested
+cleanly, with the polish-category failures not yet attributable to model
+quality specifically (methodology fix needs testing first).

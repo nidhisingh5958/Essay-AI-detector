@@ -1,11 +1,19 @@
 # Machine & Mixed Text Generation Methodology
 
-> Status: **Design only.** Nothing described here has been executed. No
-> machine-generated or mixed sample has been produced. This document
-> exists so the *design* can be reviewed before any generation runs — see
-> [project-status.md](project-status.md) for what's actually been done.
-> Related decisions: [DEC-010](decisions/DEC-010-machine-generation-model.md)
-> (generation model), [DEC-011](decisions/DEC-011-mixed-text-generation.md)
+> Status: **Pilot-tested (EXP-DATA-001, 2026-08-10).** The design below
+> was executed for real on 60 samples. Full results:
+> [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md). **The whole-
+> essay-instruction-plus-diff mechanism in Section 4 (light/moderate
+> polish) did not hold up** — 70% structure-drift rate — and needs the
+> revision described in
+> [DEC-011](decisions/DEC-011-mixed-text-generation.md)'s updated
+> "Revisit When" before further use. The full-generation (Section 3) and
+> surgical-splice (Section 4, sentence/paragraph rewrite) mechanisms are
+> validated and performed well. Treat Section 4's polish-category
+> description below as the *original* design, not a working mechanism, until
+> that revision lands. Related decisions:
+> [DEC-010](decisions/DEC-010-machine-generation-model.md) (generation
+> model), [DEC-011](decisions/DEC-011-mixed-text-generation.md)
 > (mixed-sample mechanism).
 
 ## 1. The core idea: families, not independent samples
