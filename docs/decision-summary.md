@@ -13,6 +13,7 @@ Quick-reference table for reviewers. Full reasoning lives in
 | DEC-006 | Phase 3 feature scope (Provisional) | Rhythm/vocabulary/repetition/POS features now, via `wordfreq` for rarity; signal validation deferred | Wait for Phase 5 dataset before writing any feature code | Dataset scripts themselves need feature machinery; each feature is literature-grounded even without labeled data yet |
 | DEC-007 | Local LM choice | `distilgpt2` | `gpt2` (small) | Brief-suggested, fastest local CPU option, same tokenizer family as gpt2 for an easy upgrade path |
 | DEC-008 | LM scoring method | Whole-essay single pass, tokens attributed to sentences by offset | Score each sentence independently | Preserves true preceding-document context, needed for the neighboring-sentence predictability-change signal; fewer forward passes |
+| DEC-009 | Human dataset source (Provisional) | PERSUADE 2.0 (primary) + ELLIPSE (fairness) | Official "Essays That Worked" examples | Best domain match (real admissions essays) had licensing/consent problems that disqualified it; PERSUADE/ELLIPSE have clear provenance + license, and ELLIPSE uniquely has real ELL labels for fairness |
 
 This table will grow through later phases (feature selection, scoring
 method, calibration, dataset splitting, fairness methodology, etc.) as

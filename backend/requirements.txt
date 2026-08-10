@@ -11,6 +11,11 @@ scikit-learn>=1.5
 pandas>=2.2
 numpy>=1.26
 
+# Dataset acquisition (used by scripts/, not the running backend service —
+# see scripts/README.md; kept in this same environment to avoid a second
+# virtualenv for a hackathon-scale project)
+kaggle>=1.6
+
 # Testing
 pytest>=8.2
 httpx>=0.27

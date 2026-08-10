@@ -138,7 +138,15 @@ never to classify — see
 
 ### Dataset setup
 
-Not yet applicable — see [docs/dataset.md](docs/dataset.md) (Phase 5).
+Source selection is done (PERSUADE 2.0 + ELLIPSE Corpus, see
+[docs/decisions/DEC-009-human-dataset-source.md](docs/decisions/DEC-009-human-dataset-source.md)
+and [docs/dataset-source-comparison.md](docs/dataset-source-comparison.md)),
+and the acquisition pipeline is built and unit-tested
+(`scripts/acquire_dataset.py`) but has not been run yet — it requires
+Kaggle API credentials that aren't present in this environment. See
+[scripts/README.md](scripts/README.md) for setup and usage. Cleaning/
+deduplication/splitting scripts are not written yet. See
+[docs/dataset.md](docs/dataset.md) for full status.
 
 ### Running experiments
 
