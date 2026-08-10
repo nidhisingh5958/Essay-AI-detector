@@ -19,7 +19,7 @@ from dataset_sources import DatasetSource
 @dataclass
 class FakeKaggleDataset:
     ref: str
-    licenseName: str
+    license_name: str
 
 
 class FakeKaggleApi:
@@ -47,21 +47,21 @@ SOURCE = DatasetSource(
 
 
 def test_verify_license_passes_when_license_matches():
-    api = FakeKaggleApi([FakeKaggleDataset(ref="someowner/some-dataset", licenseName="CC BY 4.0")])
+    api = FakeKaggleApi([FakeKaggleDataset(ref="someowner/some-dataset", license_name="CC BY 4.0")])
     result = verify_license(api, SOURCE)
     assert result == "CC BY 4.0"
 
 
 def test_verify_license_raises_on_license_mismatch():
     api = FakeKaggleApi(
-        [FakeKaggleDataset(ref="someowner/some-dataset", licenseName="All Rights Reserved")]
+        [FakeKaggleDataset(ref="someowner/some-dataset", license_name="All Rights Reserved")]
     )
     with pytest.raises(LicenseVerificationError, match="All Rights Reserved"):
         verify_license(api, SOURCE)
 
 
 def test_verify_license_raises_when_dataset_ref_not_found():
-    api = FakeKaggleApi([FakeKaggleDataset(ref="someone/different-dataset", licenseName="CC BY 4.0")])
+    api = FakeKaggleApi([FakeKaggleDataset(ref="someone/different-dataset", license_name="CC BY 4.0")])
     with pytest.raises(LicenseVerificationError, match="Could not find"):
         verify_license(api, SOURCE)
 
@@ -72,7 +72,7 @@ def test_acquire_does_not_download_when_license_mismatches(tmp_path, monkeypatch
     monkeypatch.setattr(acquire_dataset, "DATA_DIR", tmp_path)
 
     api = FakeKaggleApi(
-        [FakeKaggleDataset(ref="someowner/some-dataset", licenseName="All Rights Reserved")],
+        [FakeKaggleDataset(ref="someowner/some-dataset", license_name="All Rights Reserved")],
         fail_on_download=True,
     )
 
@@ -88,7 +88,7 @@ def test_acquire_downloads_and_writes_manifest_when_license_matches(tmp_path, mo
 
     monkeypatch.setattr(acquire_dataset, "DATA_DIR", tmp_path)
 
-    api = FakeKaggleApi([FakeKaggleDataset(ref="someowner/some-dataset", licenseName="CC BY 4.0")])
+    api = FakeKaggleApi([FakeKaggleDataset(ref="someowner/some-dataset", license_name="CC BY 4.0")])
 
     dest = acquire(SOURCE, api=api)
 

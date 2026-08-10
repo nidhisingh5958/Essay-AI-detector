@@ -46,11 +46,10 @@ known limitations — per the evaluation criteria requested for this phase.
   ShareAlike) on the corpus's GitHub repository. Note: The Learning Agency
   Lab's own site describes "Persuade dataset © 2024" as licensed under
   **CC BY 4.0** (no NonCommercial/ShareAlike clause) in at least one place
-  we found. **This discrepancy is not resolved by this research pass** —
-  the authoritative field is whichever license Kaggle's dataset metadata
-  states at actual download time, and DEC-009 requires that field be
-  checked programmatically before any file is retained (see "Revisit
-  When" there).
+  we found. **This discrepancy was not resolved by this research pass** —
+  **resolved 2026-08-10 by live Kaggle API verification: CC BY-NC-SA
+  4.0**, matching the GitHub framing, not the Learning Agency Lab site's.
+  See DEC-009's "Live Verification & Inspection Update."
 - **Domain relevance:** Moderate. These are argumentative/persuasive
   essays responding to assigned prompts ("Should schools require
   uniforms?"), not personal-narrative admissions essays. Register,
@@ -110,7 +109,13 @@ Sources: [GitHub — scrosseye/persuade_corpus_2.0](https://github.com/scrosseye
   (drawn from a larger ~9,000-essay raw pool, with some excluded for
   scoring-reliability reasons).
 - **Essay length:** Not independently re-verified in this research pass.
-- **Topic diversity:** 29 independent prompts.
+- **Topic diversity:** ~29 independent prompts per secondary sources found
+  during this research pass. **Correction (2026-08-10, after actual
+  acquisition and file inspection): the real file contains 44 unique
+  prompts** — see
+  [reports/dataset-inspection.md](../reports/dataset-inspection.md).
+  Left here uncorrected-in-place deliberately, alongside this note, so
+  the research-vs-inspection discrepancy itself stays visible.
 - **Authorship confidence:** High — collected during actual standardized
   testing administration, not self-reported or scraped.
 - **Availability of metadata:** Strong, and uniquely valuable for this

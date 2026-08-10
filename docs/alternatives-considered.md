@@ -161,14 +161,76 @@ here is using it alone, via a hardcoded threshold, as the entire system.
 
 ---
 
+## 6. Dataset composition: fully synthetic vs. human-only vs.
+human+AI (binary) vs. human+AI+mixed
+
+**What was compared:** how much of the dataset's authorship variety to
+actually construct.
+
+- **Fully synthetic** (no real human data — e.g. generate both "human-
+  style" and "AI-style" text from models): avoids any human-data
+  licensing/privacy question entirely, but there's no reason to believe
+  model-generated "human-style" text has the actual statistical
+  properties of real human writing — this would validate the pipeline
+  against itself, not against reality. Rejected.
+- **Human-only** (no machine or mixed samples at all): defeats the
+  purpose — there is nothing to detect. Rejected trivially, included only
+  for completeness.
+- **Human + AI, binary** (every sample is either fully human or fully
+  machine-generated, no mixed category): far simpler to build and label,
+  but directly contradicts Section 11's explicit requirement to support
+  realistic partial-AI-assistance scenarios, and would make sentence-
+  level evaluation meaningless (every sentence in a given sample has the
+  same label by construction, so there's nothing to localize). Rejected.
+- **Human + AI + mixed** (chosen): the only composition that lets
+  sentence-level and passage-level detection be evaluated meaningfully,
+  and the only one that reflects how AI assistance plausibly actually
+  occurs (partial, not all-or-nothing). Selected — see
+  [DEC-011](decisions/DEC-011-mixed-text-generation.md) for the mixed-
+  category taxonomy and mechanism.
+
+## 7. Same generation model for both dataset construction and detection
+
+**What it was:** use `distilgpt2` (the detection instrument, DEC-007) to
+also generate the machine/mixed samples.
+
+**Why considered:** avoids introducing a second model/dependency.
+
+**Why rejected:** `distilgpt2` is not instruction-tuned — it cannot
+reliably follow "write an essay about X" or "rewrite only this sentence"
+instructions, which the generation pipeline depends on (DEC-011's
+surgical-splice mechanism specifically needs instruction adherence).
+Separately, generating and detecting with the same model risks the
+detector learning that specific model's continuation quirks rather than
+anything that generalizes — precisely the failure mode Section 17 warns
+about. See [DEC-010](decisions/DEC-010-machine-generation-model.md).
+
+## 8. Local generation model vs. hosted API
+
+Full comparison in [DEC-010](decisions/DEC-010-machine-generation-model.md).
+Summary: a hosted frontier API (GPT-4o-mini, Claude Haiku, Gemini Flash)
+would produce higher-quality, more diverse generations, but costs money
+at dataset scale, requires network/API-key access not present in this
+environment, and weakens exact reproducibility (server-side model
+versions can change). A small local instruction-tuned model
+(Qwen2.5-1.5B-Instruct, Apache-2.0) was selected instead, consistent with
+this project's local-first posture throughout (DEC-004, DEC-007,
+DEC-008). Hosted APIs remain a documented *future* option specifically
+for a held-out, never-used-in-training generalization-test slice
+(Section 17) — not for primary dataset construction.
+
+---
+
 ## Deferred entries
 
 The following alternatives are relevant to later phases and will be
 documented here once there is actual evidence to compare, rather than
 speculated on now:
 
-- Sentence segmentation approaches (Phase 2)
 - Specific handcrafted feature sets vs. purely statistical features
   (Phases 3–5, tracked via `experiments/`)
 - Calibration methods (Phase 6)
 - Passage-grouping strategies (Phase 7)
+- Diff-similarity threshold and structure-drift tolerance for the
+  polish-category mixed samples (deferred to EXP-DATA-001 pilot evidence,
+  per [DEC-011](decisions/DEC-011-mixed-text-generation.md))

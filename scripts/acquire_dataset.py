@@ -57,7 +57,7 @@ def verify_license(api, source: DatasetSource) -> str:
             f"guess at an alternative ref."
         )
 
-    actual_license = dataset.licenseName
+    actual_license = dataset.license_name
     if actual_license not in source.expected_licenses:
         raise LicenseVerificationError(
             f"Dataset '{source.kaggle_ref}' reports license "

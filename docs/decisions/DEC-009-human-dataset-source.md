@@ -1,10 +1,12 @@
 # DEC-009 — Human Dataset Source
 
 ## Status
-Provisional
+Accepted (updated 2026-08-10 after live verification + file inspection —
+see "Live Verification & Inspection Update" below; originally recorded as
+Provisional based on web research only)
 
 ## Date
-2026-08-10
+2026-08-10 (original); updated same day after acquisition
 
 ## Context
 
@@ -92,13 +94,13 @@ screen out.
 ## Decision
 
 Use **PERSUADE 2.0** as the primary human-writing corpus for building
-general reference distributions (Phase 5/6), and reserve the **ELLIPSE
-Corpus** specifically for the Phase 12 fairness analysis, where its
-genuine ELL-proficiency labels allow an honest subgroup comparison instead
-of inferring language background from text (which Section 16 forbids).
-Both remain **Provisional** pending a mandatory license-verification step
-before any file is downloaded or committed (see Evidence and Revisit
-When).
+general reference distributions (Phase 5/6), and use the **ELLIPSE
+Corpus** for the Phase 12 fairness analysis, where its genuine
+proficiency labels allow an honest subgroup comparison instead of
+inferring language background from text (which Section 16 forbids). Both
+were **Provisional** pending a mandatory license-verification step before
+any file was downloaded — that step has now run for real (see "Live
+Verification & Inspection Update" below), and both passed.
 
 ## Why
 
@@ -123,6 +125,80 @@ described on the Learning Agency Lab's own site) has not been resolved
 against the authoritative source, which per Kaggle's own dataset
 conventions is the license field on the actual Kaggle dataset page at
 download time.
+
+## Live Verification & Inspection Update (2026-08-10)
+
+The Evidence section above describes this decision's state when it was
+first written (web research only). That research is preserved as-is,
+not rewritten, per this project's documentation discipline. This section
+records what changed once real credentials became available and
+acquisition actually ran.
+
+**License verification (live, not research-based):**
+- PERSUADE 2.0 (`nbroad/persaude-corpus-2`): live Kaggle metadata reports
+  `CC BY-NC-SA 4.0`. **This resolves the discrepancy** the original
+  research found — the GitHub repository's framing was correct; the
+  Learning Agency Lab site's "CC BY 4.0" framing was not the operative
+  license on the platform this project actually acquires from.
+- ELLIPSE Corpus (`mpware/ellipse-corpus`): live Kaggle metadata reports
+  `CC BY-NC-SA 4.0`, exactly as expected — no discrepancy.
+- One real bug was found and fixed during this process, not a safety-
+  logic weakening: `scripts/acquire_dataset.py` originally read
+  `dataset.licenseName` (a name assumed from web research on the `kaggle`
+  package's API), but the actual installed `kaggle` package exposes
+  `dataset.license_name` (snake_case) — confirmed by inspecting the real
+  API response object's attributes. Fixed, tests updated to match, full
+  suite re-run and passing. The refuse-on-mismatch/refuse-on-not-found
+  behavior itself was not changed.
+
+**Both datasets were downloaded and inspected.** Full findings:
+[reports/dataset-inspection.md](../../reports/dataset-inspection.md).
+Highlights that refine (not reverse) this decision:
+
+- PERSUADE 2.0's actual essay-level file is
+  `persuade_2.0_human_scores_demo_id_github.csv` (25,996 essays, 15
+  prompts each with full instruction text, paragraph structure preserved
+  in 95.8% of essays) — confirms suitability as primary corpus. Real,
+  documented data-quality issues found (not disqualifying): the
+  corpus-provided `word_count` column is unreliable for ~5% of rows
+  (worst case off by 48x), and 4 `essay_id_comp` values collide across
+  different essays. Our pipeline already recomputes word counts
+  independently (Phase 3), so this doesn't block anything — it's
+  recorded so nobody later trusts that column.
+- **New finding: PERSUADE itself carries an `ell_status` field**
+  (2,244 "Yes" / 22,451 "No" / ~5% missing) — not previously confirmed in
+  the research-only pass. This supplies a same-corpus ELL-vs-non-ELL
+  comparison, which matters because of the next finding.
+- **Refinement to ELLIPSE's role:** ELLIPSE is **100% English Language
+  Learners by corpus design** — it cannot, by itself, supply a non-ELL
+  comparison group. The original phrasing above ("honest subgroup
+  comparison") remains true but needs this precision: the comparison
+  will use (a) ELLIPSE's *continuous* proficiency scores to test for a
+  within-ELL-population correlation between proficiency and detector
+  behavior, and (b) PERSUADE's own `ell_status` field for a same-corpus
+  coarse ELL-vs-non-ELL comparison — rather than comparing PERSUADE
+  (assumed non-ELL) against ELLIPSE (ELL) directly, which would confound
+  ELL status with the fact that they're simply different corpora with
+  different prompts and task mixes.
+- ELLIPSE has 44 unique prompts, not the ~29 the original web research
+  estimated — corrected in `docs/dataset.md` and
+  `docs/dataset-source-comparison.md`.
+- Both corpora: negligible exact/near-duplication (0 exact dupes in
+  either; 4 near-dupe rows in PERSUADE, 0 in ELLIPSE).
+- Sensitive metadata inventory completed for both corpora (gender, race/
+  ethnicity, economic status, disability status, grade) — recommendation
+  is to exclude all of it from the working ML dataset, keeping only
+  `ell_status` (PERSUADE) and the proficiency scores (ELLIPSE) in a
+  separate evaluation-only table for Phase 12, never joined into
+  detector features. Full reasoning in the inspection report.
+
+**Status change justification:** DEC-009 was marked Provisional for two
+concrete, named reasons: (1) the PERSUADE license discrepancy was
+unresolved against live metadata, and (2) no file had been downloaded or
+inspected. Both are now resolved with real evidence, not assumptions —
+hence **Accepted**. The domain-mismatch trade-off (below) and the
+refined ELLIPSE fairness methodology are carried forward as documented,
+accepted characteristics of this decision, not open blockers.
 
 ## Trade-offs
 
@@ -154,15 +230,14 @@ Negative:
 
 ## Revisit When
 
-1. **Before any download occurs** (first step of the Phase 5 acquisition
-   script, not a separate manual step to skip under time pressure):
-   programmatically read the license field from the actual Kaggle dataset
-   metadata for both corpora and assert it matches what's documented
-   here. If it doesn't, stop and update this record before proceeding —
-   do not silently proceed on a mismatched license.
-2. If Phase 12's fairness analysis finds ELLIPSE's ELL-proficiency labels
-   insufficient (e.g. too few essays in some proficiency band to compare
-   meaningfully), reconsider TOEFL11 despite its LDC licensing overhead.
+1. ~~Before any download occurs, programmatically verify the license
+   field~~ — **done, 2026-08-10, both passed.** (Kept struck through
+   rather than deleted, so the historical criterion and its resolution
+   are both visible.)
+2. If Phase 12's fairness analysis finds ELLIPSE's proficiency-score
+   gradient and/or PERSUADE's `ell_status` field insufficient (e.g. too
+   few essays in some proficiency band to compare meaningfully),
+   reconsider TOEFL11 despite its LDC licensing overhead.
 3. If ICLE's promised September 2026 free-access rollout turns out to
    include bulk export, re-evaluate it as an additional or replacement
    source.
@@ -170,16 +245,25 @@ Negative:
    produce misleading results specifically *because* of register
    differences (not just weaker overall accuracy), this decision should
    be revisited rather than patched around with post-hoc calibration.
+5. If preprocessing later finds the `essay_id_comp` ID collisions (4
+   values, PERSUADE) or the `word_count` column unreliability cause any
+   downstream problem beyond what's already documented, update
+   `reports/dataset-inspection.md` rather than silently working around it
+   in code.
 
 ## Implementation
 
-Not yet — this decision precedes the acquisition script
-(`scripts/`, to be added next). No files have been downloaded or
-committed.
+`scripts/acquire_dataset.py`, `scripts/dataset_sources.py` (license check
+fixed to use `license_name`, matching the real Kaggle API — see Live
+Verification Update). Acquired files: `data/raw/persuade_2.0/`,
+`data/raw/ellipse_corpus/` (gitignored, not committed — see
+`.gitignore` and `docs/dataset.md`).
 
 ## Tests / Experiments
 
-None yet. The license-verification step above will be the first
-automated check in the (not-yet-written) acquisition script, and should
-have its own test asserting the script refuses to proceed on a license
-mismatch.
+`scripts/tests/test_acquire_dataset.py` (5 tests, license-gate logic,
+fake API — still passing after the attribute-name fix),
+`scripts/tests/test_inspect_corpus.py` (9 tests, inspection utilities
+against fixtures). Live verification itself (not a unit test, a real
+one-time acquisition run) documented in
+[reports/dataset-inspection.md](../../reports/dataset-inspection.md).

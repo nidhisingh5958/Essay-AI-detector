@@ -22,7 +22,13 @@ data/*
 experiments/**/results/
 reports/*
 !reports/.gitkeep
+!reports/*.md
 
 # OS / editor
 .DS_Store
 .vscode/
+
+
+.kaggle/
+kaggle.json
+**/kaggle.json

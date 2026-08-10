@@ -1,8 +1,12 @@
 # Methodology
 
 > Status: Phase 3 (linguistic features) and Phase 4 (LM instrumentation)
-> are implemented (see [project-status.md](project-status.md)), but
-> scoring, calibration, and reference distributions do not exist — so
+> are implemented (see [project-status.md](project-status.md)). The
+> human corpus needed for Section 5 (reference distributions) has now
+> been acquired, live-license-verified, and inspected — see
+> [dataset.md](dataset.md) and
+> [reports/dataset-inspection.md](../reports/dataset-inspection.md) — but
+> no reference distribution, scoring, or calibration exists yet, so
 > sections 5–10 below remain unwritten. Sections 3–4 are filled in; treat
 > the rest as reserved structure, not implemented behavior.
 

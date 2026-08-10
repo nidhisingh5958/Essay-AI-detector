@@ -102,9 +102,30 @@ see [decisions/DEC-004-no-llm-classifier.md](decisions/DEC-004-no-llm-classifier
 
 ## 12. How was the scoring method selected? — Not yet implemented (Phase 6)
 
-## 13. How was the dataset constructed? — Not yet implemented (Phase 5)
+## 13. How was the dataset constructed?
 
-## 14. How was data leakage prevented? — Not yet implemented (Phase 5)
+The human-writing side is real, live-verified, and inspected as of Phase
+5C: PERSUADE 2.0 (25,996 argumentative student essays) as the primary
+corpus, ELLIPSE (6,482 essays from English Language Learners) for the
+fairness analysis — both acquired via a script that checks the live
+license against what was expected before downloading anything (see
+[DEC-009](decisions/DEC-009-human-dataset-source.md) and the
+[dataset inspection report](../reports/dataset-inspection.md)). Real
+data-quality issues were found and documented (an unreliable word-count
+column, a few duplicate IDs) rather than papered over. The
+machine-written and mixed/AI-polished side is fully designed
+([DEC-010](decisions/DEC-010-machine-generation-model.md),
+[DEC-011](decisions/DEC-011-mixed-text-generation.md),
+[generation-methodology.md](generation-methodology.md)) but **not yet
+generated** — that's the next phase, pending review.
+
+## 14. How was data leakage prevented?
+
+The design principle is fixed even though generation hasn't happened
+yet: every sample derived from one human seed essay shares a `family_id`
+and must land in the same train/validation/test split, with split
+assignment happening *before* generation runs, not after (see
+[DEC-011](decisions/DEC-011-mixed-text-generation.md)).
 
 ## 15. How was the detector evaluated? — Not yet implemented (Phase 10)
 
@@ -122,21 +143,26 @@ calibration-level alternatives will be added as those phases complete.
 
 ## 19. What are the current limitations?
 
-At Phase 4, the system can normalize, validate, and segment essay text,
-and compute a provisional set of linguistic features and language-model
-predictability signals per sentence and per essay — but it does not yet
-know whether any of those features actually distinguish human from AI
-writing (no reference distributions, no scoring), and it produces no
-classification. distilgpt2 is a small, relatively weak language model, so
-its probability estimates are noisier than a larger model's would be —
-an accepted, documented trade-off (DEC-007), not a hidden one. The
-frontend accepts text but the "Analyze" action is still disabled, and the
-backend exposes no `/api/analyze` endpoint. See
-[project-status.md](project-status.md) for exactly what exists.
+The system can normalize, validate, and segment essay text, and compute a
+provisional set of linguistic features and language-model predictability
+signals per sentence and per essay — but it does not yet know whether
+any of those features actually distinguish human from AI writing (no
+reference distributions, no scoring), and it produces no classification.
+distilgpt2 is a small, relatively weak language model (DEC-007). The
+human corpus itself is real but domain-mismatched — argumentative/
+proficiency-assessment student essays, not personal-narrative admissions
+writing (DEC-009) — and has documented data-quality quirks (an
+unreliable word-count column, a handful of duplicate IDs; see the
+[inspection report](../reports/dataset-inspection.md)). No machine or
+mixed sample has been generated yet. The frontend accepts text but the
+"Analyze" action is still disabled, and the backend exposes no
+`/api/analyze` endpoint. See [project-status.md](project-status.md) for
+exactly what exists.
 
 ## 20. What would we improve next?
 
-Proceed to Phase 5 (dataset construction) per
-[project-status.md](project-status.md) — it's now the blocking
-prerequisite for validating whether any Phase 3 or Phase 4 feature
-actually carries human/AI signal (EXP-002, EXP-003).
+Pending review of the Phase 5C inspection findings: run the EXP-DATA-001
+generation pilot (still not run) using the now-confirmed real prompt
+text and paragraph structure from PERSUADE, then use the dataset to
+actually test whether Phase 3/4 features carry human/AI signal
+(EXP-002, EXP-003) — per [project-status.md](project-status.md).
