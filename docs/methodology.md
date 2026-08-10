@@ -1,12 +1,10 @@
 # Methodology
 
-> Status: Phase 3 feature computation exists (see
-> [project-status.md](project-status.md) and
-> [decisions/DEC-006-phase3-feature-scope.md](decisions/DEC-006-phase3-feature-scope.md)),
-> but scoring, calibration, and reference distributions do not — so
-> sections 5–10 below remain unwritten. Section 3 (feature engineering) is
-> filled in; treat the rest as reserved structure, not implemented
-> behavior.
+> Status: Phase 3 (linguistic features) and Phase 4 (LM instrumentation)
+> are implemented (see [project-status.md](project-status.md)), but
+> scoring, calibration, and reference distributions do not exist — so
+> sections 5–10 below remain unwritten. Sections 3–4 are filled in; treat
+> the rest as reserved structure, not implemented behavior.
 
 ## 3. Feature engineering (Phase 3 — implemented, provisional)
 
@@ -26,6 +24,42 @@ Phase 5 dataset. **What the system measures** (the numbers above) is
 therefore already true; **what the system infers** from them (whether any
 of this indicates AI involvement) is not yet defined — that is Phase 6's
 scoring/calibration work, informed by EXP-002 once Phase 5 exists.
+
+## 4. Language-model instrumentation (Phase 4 — implemented, provisional)
+
+`backend/app/services/language_model.py` loads a small local causal LM
+(`distilgpt2`, [DEC-007](decisions/DEC-007-local-language-model-choice.md))
+once per process and scores the whole normalized essay in a single
+teacher-forced forward pass (chunked only if the essay exceeds the
+model's 1024-token context window). Each token's log-probability is
+attributed back to its containing sentence by character offset, per
+[DEC-008](decisions/DEC-008-lm-scoring-method.md) — chosen over scoring
+each sentence in isolation specifically so predictability is measured
+*given the essay's actual preceding context*, not in a vacuum.
+
+From this, per sentence: mean and median token log-probability,
+log-probability variance, and perplexity (`exp(-mean_log_prob)`). Across
+sentences: the change in mean log-probability from one sentence to the
+next (Section 6A's "predictability burstiness" / "change in
+predictability between neighboring sentences").
+
+**What this does and does not tell us:** these are measurements of how
+surprising a sequence of tokens is *to this specific small model*, not a
+direct measurement of "AI-ness." A low perplexity sentence is one
+distilgpt2 finds unsurprising — that could mean simple/formulaic phrasing
+(human or AI), a topic the model's training data covered well, or genuine
+machine generation. Section 6A's explicit warning — "Do not assume low
+perplexity = AI" — applies fully here. Turning these numbers into a
+classification requires comparing them against reference distributions
+built from labeled data (Phase 5/6), which does not exist yet. As with
+Phase 3's features, this feature category is provisional until EXP-003
+measures its actual signal.
+
+A sentence whose only tokens fall in a context-free position (only
+possible for a very short first sentence of the whole essay) has no
+scorable tokens; its LM features are reported as unavailable (`None`)
+rather than a fabricated value — consistent with the project's
+"insufficient evidence" principle (Section 8).
 
 ## Purpose of this document
 
@@ -48,8 +82,6 @@ Writing style is evidence, not proof.
 2. Hypotheses driving feature selection — ongoing (recorded per-feature in
    `experiments/`, not asserted here without an experiment behind it; see
    DEC-006 for the Phase 3 starting hypotheses)
-4. Language-model instrumentation and what it does/doesn't tell us —
-   Phase 4, ties to [DEC-004](decisions/DEC-004-no-llm-classifier.md)
 5. Reference-distribution construction — Phase 5
 6. Scoring and calibration — Phase 6
 7. Sentence-level and passage-level analysis — Phase 7

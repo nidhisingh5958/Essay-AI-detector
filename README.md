@@ -126,9 +126,15 @@ button is intentionally disabled until the backend pipeline exists
 
 ### Model setup
 
-Not yet applicable — the local language model is introduced in Phase 4.
-See [docs/decisions/DEC-004-no-llm-classifier.md](docs/decisions/DEC-004-no-llm-classifier.md)
-for the constraints it will be built under (local only, instrument only).
+The local language model (`distilgpt2`, see
+[docs/decisions/DEC-007-local-language-model-choice.md](docs/decisions/DEC-007-local-language-model-choice.md))
+downloads automatically from the Hugging Face Hub the first time
+`backend/app/services/language_model.py` runs (e.g. the first test run or
+API request), and is cached locally afterward
+(`~/.cache/huggingface/`) — no manual download step, but the very first
+run needs network access. It is used strictly as a measurement instrument,
+never to classify — see
+[docs/decisions/DEC-004-no-llm-classifier.md](docs/decisions/DEC-004-no-llm-classifier.md).
 
 ### Dataset setup
 
@@ -164,19 +170,23 @@ for the planned methodology around second-language English writers and
 the constraint that no fairness claim will be made without an actual
 evaluation on appropriately labeled data.
 
-## Limitations (current, Phase 3)
+## Limitations (current, Phase 4)
 
-- The system does not classify or score essays yet — Phases 2–3 only
-  normalize text, validate input, split essays into sentences, and
-  compute a provisional set of linguistic features (sentence rhythm,
-  vocabulary, repetition, POS/dependency) per sentence and per essay.
-- None of the Phase 3 features have been validated against real human/AI
-  writing yet — that requires the Phase 5 dataset (see
-  [docs/decisions/DEC-006-phase3-feature-scope.md](docs/decisions/DEC-006-phase3-feature-scope.md),
-  marked Provisional).
-- spaCy (`en_core_web_sm`) and `wordfreq` are installed and used. PyTorch,
-  Transformers, and scikit-learn are still not installed in the working
-  dev environment — they are exercised starting Phase 4/5.
+- The system does not classify or score essays yet — Phases 2–4 only
+  normalize text, validate input, split essays into sentences, compute a
+  provisional set of linguistic features (sentence rhythm, vocabulary,
+  repetition, POS/dependency), and compute LM-derived predictability
+  features (log-probability, perplexity) per sentence and per essay.
+- None of the Phase 3/4 features have been validated against real
+  human/AI writing yet — that requires the Phase 5 dataset (see
+  [docs/decisions/DEC-006-phase3-feature-scope.md](docs/decisions/DEC-006-phase3-feature-scope.md)
+  and DEC-007/DEC-008, all marked Provisional/pending EXP-002/EXP-003).
+- `distilgpt2` is a small model; its probability estimates are noisier
+  than a larger model's would be — an accepted, documented trade-off, not
+  a hidden one.
+- spaCy (`en_core_web_sm`), `wordfreq`, PyTorch, and Transformers are all
+  installed and used. scikit-learn and pandas are still not installed in
+  the working dev environment — they are exercised starting Phase 5/6.
 
 ## Decision-making approach
 

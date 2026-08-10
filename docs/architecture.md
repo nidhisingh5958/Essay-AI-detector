@@ -58,7 +58,7 @@ The scoring and evidence-generation stages are our own code, not an LLM
 call — see [decisions/DEC-004-no-llm-classifier.md](decisions/DEC-004-no-llm-classifier.md)
 for why.
 
-## What exists today (Phase 3)
+## What exists today (Phase 4)
 
 - **Backend** (`backend/app/`): FastAPI app with a single `/api/health`
   endpoint (Phase 1). Phase 2 added text preprocessing:
@@ -84,11 +84,24 @@ for why.
     — this feature set is explicitly **provisional**, not yet validated
     against real human/AI data.
 
+  Phase 4 adds local language-model instrumentation:
+  - `services/language_model.py` — loads `distilgpt2` once per process
+    (see [decisions/DEC-007-local-language-model-choice.md](decisions/DEC-007-local-language-model-choice.md)),
+    computes per-token log-probabilities for the whole essay in one
+    (chunked-if-needed) forward pass, then attributes tokens back to
+    sentences by character offset to produce per-sentence mean/median
+    log-probability, perplexity, and log-probability variance, plus the
+    change in predictability between neighboring sentences. See
+    [decisions/DEC-008-lm-scoring-method.md](decisions/DEC-008-lm-scoring-method.md)
+    for why whole-essay scoring was chosen over scoring each sentence in
+    isolation. Per [DEC-004](decisions/DEC-004-no-llm-classifier.md), this
+    model never classifies anything — it only produces the numbers above.
+
   `models/`, `ml/` still exist as placeholders for Phases 5–8. There is
   still no `/api/analyze` endpoint or orchestrating `analyzer.py` — Phase
-  2/3 output (sentences, feature values) is not yet wired into a
-  request/response flow, and no scoring exists yet to interpret these
-  numbers.
+  2/3/4 output (sentences, linguistic features, LM features) is not yet
+  wired into a request/response flow, and no scoring exists yet to
+  interpret any of these numbers.
 - **Frontend** (`frontend/`): unchanged since Phase 1 — a landing page
   with a working textarea (`components/EssayInput/`) and a disabled
   "Analyze" button.
@@ -110,7 +123,7 @@ backend/
 │   │   ├── validation.py         # exists (Phase 2)
 │   │   ├── sentence_segmenter.py # exists (Phase 2)
 │   │   ├── feature_extractor.py  # exists (Phase 3)
-│   │   ├── language_model.py     # Phase 4
+│   │   ├── language_model.py     # exists (Phase 4)
 │   │   ├── scoring.py            # Phase 6
 │   │   ├── passage_analyzer.py   # Phase 7
 │   │   └── evidence.py           # Phase 6/7
@@ -146,13 +159,22 @@ README for the target request/response shape. Not implemented yet; will
 be added in Phase 8 once scoring (Phase 6) and passage analysis (Phase 7)
 exist to actually populate the response.
 
-## Model loading and performance (planned constraints)
+## Model loading and performance
 
-- The local causal LM is loaded once at process startup and reused across
-  requests (no per-sentence reload) — see Section 5/21 of the project
-  brief. To be implemented in `backend/app/services/language_model.py`
-  (Phase 4), with its own decision record once a concrete loading/caching
-  strategy is chosen.
+- Both the spaCy pipeline (`sentence_segmenter.get_nlp()`) and the
+  distilgpt2 model/tokenizer (`language_model._load_model()`) are loaded
+  once per process via `functools.lru_cache` and reused across requests —
+  no per-sentence or per-request reload (Section 5/21).
+- distilgpt2 is downloaded from the Hugging Face Hub on first use and
+  cached locally (`~/.cache/huggingface/`) — the first run after a fresh
+  environment setup needs network access; subsequent runs are fully
+  offline.
+- Essays are scored by the LM in a single forward pass in the common case
+  (under ~1024 tokens); longer essays are chunked (DEC-008). The full test
+  suite, including a ~1500-word chunked-essay test, runs in about 14
+  seconds on a normal laptop CPU with both models loaded — no GPU
+  required.
 - Input length is capped (`Settings.max_essay_chars`, currently 20,000
-  characters) to bound worst-case latency; this limit may be revisited
-  once real inference latency is measured in Phase 4.
+  characters) to bound worst-case latency; not yet re-validated against
+  measured end-to-end request latency, since there is no `/api/analyze`
+  endpoint yet to measure (Phase 8).

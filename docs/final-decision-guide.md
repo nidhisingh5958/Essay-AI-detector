@@ -52,9 +52,14 @@ medium/long distribution), vocabulary diversity (type-token ratio and a
 windowed "moving average" version that's more stable for longer essays),
 how many words are statistically rare (via the `wordfreq` library's word-
 frequency data), and how much repeated language there is (repeated
-2-word/3-word sequences, and repeated sentence openings). Local-language-
-model signals (perplexity, token-probability) are not measured yet —
-that's Phase 4.
+2-word/3-word sequences, and repeated sentence openings).
+
+As of Phase 4 (`services/language_model.py`), each sentence also gets
+language-model-derived predictability signals: mean and median token
+log-probability, perplexity, log-probability variance, and how much
+predictability changes from the previous sentence. These come from a
+small local model (distilgpt2) that only ever produces numbers — it is
+never asked to judge the essay (see [DEC-004](decisions/DEC-004-no-llm-classifier.md)).
 
 ## 6. Why were these signals selected?
 
@@ -81,8 +86,18 @@ human from AI writing.
 
 ## 10. How is evidence generated? — Not yet implemented (Phase 6/7)
 
-## 11. How was the language model selected? — Not yet implemented (Phase 4).
-The *role* it's allowed to play (instrument, not judge) is already fixed —
+## 11. How was the language model selected?
+
+`distilgpt2` — small (82M parameters), runs fast on a normal laptop CPU,
+explicitly suggested by the project brief, and shares its tokenizer with
+`gpt2` so upgrading later (if distilgpt2's signal proves too weak) is a
+one-line change. See
+[decisions/DEC-007-local-language-model-choice.md](decisions/DEC-007-local-language-model-choice.md).
+It scores the whole essay in one pass rather than each sentence in
+isolation, so predictability is measured with real preceding-essay
+context — see
+[decisions/DEC-008-lm-scoring-method.md](decisions/DEC-008-lm-scoring-method.md).
+Its *role* (instrument, never judge) was fixed before model selection —
 see [decisions/DEC-004-no-llm-classifier.md](decisions/DEC-004-no-llm-classifier.md).
 
 ## 12. How was the scoring method selected? — Not yet implemented (Phase 6)
@@ -107,18 +122,21 @@ calibration-level alternatives will be added as those phases complete.
 
 ## 19. What are the current limitations?
 
-At Phase 3, the system can normalize, validate, and segment essay text,
-and compute a provisional set of linguistic features per sentence and per
-essay — but it does not yet know whether any of those features actually
-distinguish human from AI writing (no reference distributions, no
-scoring), and it produces no classification. The frontend accepts text
-but the "Analyze" action is still disabled, and the backend exposes no
-`/api/analyze` endpoint. See [project-status.md](project-status.md) for
-exactly what exists.
+At Phase 4, the system can normalize, validate, and segment essay text,
+and compute a provisional set of linguistic features and language-model
+predictability signals per sentence and per essay — but it does not yet
+know whether any of those features actually distinguish human from AI
+writing (no reference distributions, no scoring), and it produces no
+classification. distilgpt2 is a small, relatively weak language model, so
+its probability estimates are noisier than a larger model's would be —
+an accepted, documented trade-off (DEC-007), not a hidden one. The
+frontend accepts text but the "Analyze" action is still disabled, and the
+backend exposes no `/api/analyze` endpoint. See
+[project-status.md](project-status.md) for exactly what exists.
 
 ## 20. What would we improve next?
 
-Proceed to Phase 4 (local language-model instrumentation: log-probability,
-perplexity) per [project-status.md](project-status.md). The dataset
-(Phase 5) is needed before any of Phase 3's or Phase 4's features can be
-validated for actual signal.
+Proceed to Phase 5 (dataset construction) per
+[project-status.md](project-status.md) — it's now the blocking
+prerequisite for validating whether any Phase 3 or Phase 4 feature
+actually carries human/AI signal (EXP-002, EXP-003).
