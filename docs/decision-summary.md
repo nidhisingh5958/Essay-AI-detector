@@ -10,6 +10,7 @@ Quick-reference table for reviewers. Full reasoning lives in
 | DEC-003 | Repo layout | Single monorepo | Separate repos per component | Keeps code, docs, decisions, and experiments cross-referenceable in one tree |
 | DEC-004 | Language model role | Local LM as feature-extraction instrument only; scoring is our own code | LLM-as-classifier | Explainability requires measurable features, not an opaque verdict; local-only avoids paid API dependency |
 | DEC-005 | Sentence segmentation | spaCy `en_core_web_sm` statistical pipeline | Regex/rule-based splitting | Handles abbreviations/punctuation correctly; same pipeline reused for Phase 3 POS/dependency features, keeping boundaries consistent |
+| DEC-006 | Phase 3 feature scope (Provisional) | Rhythm/vocabulary/repetition/POS features now, via `wordfreq` for rarity; signal validation deferred | Wait for Phase 5 dataset before writing any feature code | Dataset scripts themselves need feature machinery; each feature is literature-grounded even without labeled data yet |
 
 This table will grow through later phases (feature selection, scoring
 method, calibration, dataset splitting, fairness methodology, etc.) as

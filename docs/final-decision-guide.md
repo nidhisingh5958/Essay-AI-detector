@@ -40,9 +40,38 @@ use for highlighting (Phase 9). See
 for why this approach was chosen over regex splitting, NLTK, or a
 non-statistical spaCy pipeline.
 
-## 5. What signals do we measure? — Not yet implemented (Phase 3/4)
+## 5. What signals do we measure?
 
-## 6. Why were these signals selected? — Not yet implemented (Phase 3/4, tied to `experiments/`)
+As of Phase 3 (`services/feature_extractor.py`), for each **sentence**:
+word/character/punctuation counts, average word length, the proportion of
+its words that are nouns/verbs/adjectives/adverbs/pronouns, and how deep
+its dependency (grammatical) tree is — a proxy for how syntactically
+complex the sentence is. For the **whole essay**: how much sentence length
+varies (mean, standard deviation, coefficient of variation, and a short/
+medium/long distribution), vocabulary diversity (type-token ratio and a
+windowed "moving average" version that's more stable for longer essays),
+how many words are statistically rare (via the `wordfreq` library's word-
+frequency data), and how much repeated language there is (repeated
+2-word/3-word sequences, and repeated sentence openings). Local-language-
+model signals (perplexity, token-probability) are not measured yet —
+that's Phase 4.
+
+## 6. Why were these signals selected?
+
+Each is a standard, literature-established measure of writing style
+(stylometry/computational linguistics), not something invented for this
+project — see
+[decisions/DEC-006-phase3-feature-scope.md](decisions/DEC-006-phase3-feature-scope.md)
+for the alternatives considered for the trickier cases (e.g. why
+`wordfreq` rather than spaCy's own word-probability data, which turns out
+to be unpopulated in the small model used here).
+
+**Important caveat:** none of these features have been validated yet
+against real human/AI-written text — that requires the dataset from Phase
+5 and the comparison experiment (EXP-002) that hasn't run. DEC-006 is
+marked *Provisional* for exactly this reason. Right now this document can
+say what is measured, not yet which measurements actually distinguish
+human from AI writing.
 
 ## 7. How are signals normalized? — Not yet implemented (Phase 6)
 
@@ -78,13 +107,18 @@ calibration-level alternatives will be added as those phases complete.
 
 ## 19. What are the current limitations?
 
-At Phase 2, the system can normalize, validate, and segment essay text
-into sentences, but it does not measure any features or produce any
-classification yet. The frontend accepts text but the "Analyze" action is
-still disabled, and the backend exposes no `/api/analyze` endpoint. See
-[project-status.md](project-status.md) for exactly what exists.
+At Phase 3, the system can normalize, validate, and segment essay text,
+and compute a provisional set of linguistic features per sentence and per
+essay — but it does not yet know whether any of those features actually
+distinguish human from AI writing (no reference distributions, no
+scoring), and it produces no classification. The frontend accepts text
+but the "Analyze" action is still disabled, and the backend exposes no
+`/api/analyze` endpoint. See [project-status.md](project-status.md) for
+exactly what exists.
 
 ## 20. What would we improve next?
 
-Proceed to Phase 3 (linguistic feature extraction: sentence rhythm,
-vocabulary, repetition) per [project-status.md](project-status.md).
+Proceed to Phase 4 (local language-model instrumentation: log-probability,
+perplexity) per [project-status.md](project-status.md). The dataset
+(Phase 5) is needed before any of Phase 3's or Phase 4's features can be
+validated for actual signal.

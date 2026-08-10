@@ -13,6 +13,7 @@ from functools import lru_cache
 
 import spacy
 from spacy.language import Language
+from spacy.tokens import Doc, Span
 
 
 @lru_cache(maxsize=1)
@@ -26,25 +27,41 @@ def get_nlp() -> Language:
     return spacy.load("en_core_web_sm")
 
 
+def parse_document(text: str) -> Doc | None:
+    """Run the shared pipeline once, for callers that need the full parse
+    (Phase 3 feature extraction) rather than just sentence boundaries."""
+    if not text.strip():
+        return None
+    return get_nlp()(text)
+
+
 @dataclass(frozen=True)
 class Sentence:
     index: int
     text: str
     start_char: int
     end_char: int
+    span: Span
+    """The underlying spaCy sentence span, kept for downstream linguistic
+    feature extraction (POS ratios, dependency depth) so the text never
+    needs to be re-parsed. Its own start/end may include a trailing
+    whitespace token that `text`/`start_char`/`end_char` above have
+    already trimmed for display purposes — feature code should filter
+    `token.is_space` rather than rely on span boundaries being trimmed."""
 
 
-def segment_sentences(text: str) -> list[Sentence]:
+def segment_sentences(text: str, doc: Doc | None = None) -> list[Sentence]:
     """Split `text` into sentences with offsets into `text` itself.
 
     Callers are expected to pass already-normalized text (see
     text_normalizer.normalize_text) so offsets line up with what the
-    frontend renders.
+    frontend renders. Pass `doc` (from `parse_document`) to reuse a parse
+    already computed elsewhere instead of parsing `text` again.
     """
-    if not text.strip():
+    if doc is None:
+        doc = parse_document(text)
+    if doc is None:
         return []
-
-    doc = get_nlp()(text)
 
     sentences: list[Sentence] = []
     for sent in doc.sents:
@@ -63,6 +80,7 @@ def segment_sentences(text: str) -> list[Sentence]:
                 text=stripped,
                 start_char=real_start,
                 end_char=real_end,
+                span=sent,
             )
         )
 

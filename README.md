@@ -164,15 +164,19 @@ for the planned methodology around second-language English writers and
 the constraint that no fairness claim will be made without an actual
 evaluation on appropriately labeled data.
 
-## Limitations (current, Phase 2)
+## Limitations (current, Phase 3)
 
-- The system does not classify or score essays yet — Phase 2 only
-  normalizes text, validates input, and splits essays into sentences with
-  character offsets.
-- spaCy (`en_core_web_sm`) is installed and used for sentence
-  segmentation. Transformers, PyTorch, and scikit-learn are still not
-  installed in the working dev environment — they are exercised starting
-  Phase 3/4.
+- The system does not classify or score essays yet — Phases 2–3 only
+  normalize text, validate input, split essays into sentences, and
+  compute a provisional set of linguistic features (sentence rhythm,
+  vocabulary, repetition, POS/dependency) per sentence and per essay.
+- None of the Phase 3 features have been validated against real human/AI
+  writing yet — that requires the Phase 5 dataset (see
+  [docs/decisions/DEC-006-phase3-feature-scope.md](docs/decisions/DEC-006-phase3-feature-scope.md),
+  marked Provisional).
+- spaCy (`en_core_web_sm`) and `wordfreq` are installed and used. PyTorch,
+  Transformers, and scikit-learn are still not installed in the working
+  dev environment — they are exercised starting Phase 4/5.
 
 ## Decision-making approach
 
