@@ -17,6 +17,25 @@ Output: data/generated/EXP-DATA-001/samples.jsonl (all attempted samples,
 including rejected ones, each carrying qc_status), plus
 data/generated/EXP-DATA-001/summary.json (aggregated statistics used to
 write reports/EXP-DATA-001.md). Both gitignored under data/*.
+
+POST-PILOT PATCH (2026-08-10, after DEC-011's revision): this file was
+executed once (results preserved in reports/EXP-DATA-001.md and NOT
+re-run) and has since been patched for two things found by that run,
+without a second full execution:
+  1. The prompt-leakage QC check now uses check_instruction_leakage with
+     META-only instruction text (the old check compared against the
+     whole formatted instruction, including embedded prompt text, which
+     produced false positives -- see DEC-011 "Pilot Findings").
+  2. `light_polish`/`moderate_polish` now record
+     ground_truth_confidence="essay_level_only" and modified_spans=None,
+     per DEC-011's revised three-regime structure (Regime C: whole-essay
+     polish is not sentence-level ground truth). The sentence-diff
+     computation is retained ONLY as a diagnostic (written to
+     diffs.json) -- per instruction, alignment/diffing is not used to
+     manufacture sentence-level labels for this regime.
+The small, explicitly-scoped follow-up validation for the *new*
+controlled-span light/moderate mechanism is a separate script,
+run_exp_data_001_r1.py -- not a second run of this file.
 """
 
 import json
@@ -71,6 +90,39 @@ FULL_GENERATION_INSTRUCTION = (
     "Write a {task_type_desc} essay of approximately {target_words} words responding to the "
     "following prompt. Write in the voice of a student. Return only the essay, with no preamble "
     "or title.\n\nPrompt: {prompt_text}"
+)
+
+# META-only counterparts of the instructions above: the wrapper/meta
+# language WITHOUT any interpolated topic content (prompt text, target
+# sentence/paragraph, surrounding context). Used exclusively for the
+# instruction-leakage QC check (check_instruction_leakage) -- never pass
+# the full formatted instruction to that check, since a generated essay
+# is expected to legitimately echo its prompt/target content (see the
+# POST-PILOT PATCH note above and DEC-011).
+LIGHT_POLISH_META = (
+    "Lightly copy-edit the following essay for grammar and word choice only. "
+    "Do not change the structure, paragraph breaks, content, or ideas, and do not "
+    "add or remove sentences. Return only the edited essay, with no preamble or commentary."
+)
+MODERATE_POLISH_META = (
+    "Moderately rephrase the following essay: you may reword sentences for clarity and "
+    "flow, but do not reorder sentences or paragraphs, do not add or remove sentences, and "
+    "do not change the meaning or arguments. Return only the rewritten essay, with no "
+    "preamble or commentary."
+)
+SENTENCE_REWRITE_META = (
+    "Rewrite ONLY the following sentence, preserving its meaning and matching the tone of "
+    "the surrounding context. Return only the rewritten sentence, with no preamble, quotation "
+    "marks, or commentary."
+)
+PARAGRAPH_REWRITE_META = (
+    "Rewrite ONLY the following paragraph, preserving its meaning and matching the tone of "
+    "the surrounding essay. Return only the rewritten paragraph, with no preamble or commentary."
+)
+FULL_GENERATION_META = (
+    "Write a {task_type_desc} essay of approximately {target_words} words responding to the "
+    "following prompt. Write in the voice of a student. Return only the essay, with no preamble "
+    "or title."
 )
 
 _rng_counter = [1000]  # simple incrementing counter for per-call generation seeds
@@ -134,7 +186,11 @@ def make_sample_record(
     }
 
 
-def run_qc_common(instruction: str | None, text: str, min_words: int, max_words: int) -> list[str]:
+def run_qc_common(meta_instruction: str | None, text: str, min_words: int, max_words: int) -> list[str]:
+    """`meta_instruction` must be the META/wrapper-only instruction text
+    (see the *_META constants above) -- never the fully-interpolated
+    instruction, which would embed prompt/target content the output is
+    expected to legitimately reference (see POST-PILOT PATCH note)."""
     notes = []
     if gu.check_empty_output(text):
         notes.append("empty_output")
@@ -142,8 +198,10 @@ def run_qc_common(instruction: str | None, text: str, min_words: int, max_words:
     word_count = len(text.split())
     if not gu.check_length_bounds(word_count, min_words, max_words):
         notes.append(f"length_out_of_bounds(words={word_count},min={min_words},max={max_words})")
-    if instruction and gu.check_prompt_leakage(instruction, text):
-        notes.append("prompt_leakage")
+    if meta_instruction and gu.check_instruction_leakage(meta_instruction, text):
+        notes.append("instruction_leakage")
+    if gu.check_ai_self_reference(text):
+        notes.append("ai_self_reference")
     flagged, ratio = gu.check_excessive_repetition([w.lower() for w in text.split()])
     if flagged:
         notes.append(f"excessive_repetition(ratio={ratio:.2f})")
@@ -158,6 +216,7 @@ def generate_full_ai(seed: dict, split: str) -> dict:
     instruction = FULL_GENERATION_INSTRUCTION.format(
         task_type_desc=task_type_desc, target_words=target_words, prompt_text=seed["assignment"]
     )
+    meta_instruction = FULL_GENERATION_META.format(task_type_desc=task_type_desc, target_words=target_words)
     max_new_tokens = gu.budget_max_new_tokens(target_words)
     gen_seed = next_gen_seed()
     result = qwen_generate.generate(instruction, max_new_tokens=max_new_tokens, temperature=0.85, top_p=0.95, seed=gen_seed)
@@ -167,7 +226,7 @@ def generate_full_ai(seed: dict, split: str) -> dict:
     sentences = segment_sentences(text, doc=doc) if doc is not None else []
     truncated = gu.truncate_to_word_budget(text, [s.end_char for s in sentences], target_words) if sentences else text
 
-    notes = run_qc_common(instruction, truncated, min_words=30, max_words=int(target_words * 2))
+    notes = run_qc_common(meta_instruction, truncated, min_words=30, max_words=int(target_words * 2))
     qc_status = "passed" if not notes else "flagged"
 
     return make_sample_record(
@@ -189,7 +248,15 @@ def generate_full_ai(seed: dict, split: str) -> dict:
 
 
 def generate_polish(seed: dict, split: str, category: str) -> dict:
+    """Regime C (DEC-011 revision): whole-essay light/moderate polish
+    produces ESSAY-LEVEL-ONLY ground truth -- we know with certainty the
+    whole essay passed through this generation process, but we make NO
+    sentence-level claim from it. The sentence-diff below is computed and
+    logged strictly as a DIAGNOSTIC (structure-drift detection, observed
+    similarity range for documentation) -- per explicit instruction, it
+    is never used to manufacture per-sentence labels for this category."""
     instruction_template = LIGHT_POLISH_INSTRUCTION if category == "light_polish" else MODERATE_POLISH_INSTRUCTION
+    meta_instruction = LIGHT_POLISH_META if category == "light_polish" else MODERATE_POLISH_META
     original_text = normalize_text(seed["full_text"])
     instruction = instruction_template.format(text=original_text)
 
@@ -203,17 +270,22 @@ def generate_polish(seed: dict, split: str, category: str) -> dict:
     cand_doc = parse_document(candidate_text)
     cand_sentences = segment_sentences(candidate_text, doc=cand_doc) if cand_doc is not None else []
 
+    # Diagnostic only -- see docstring. Not used to set modified_spans.
     diff = gu.align_and_diff_sentences([s.text for s in orig_sentences], [s.text for s in cand_sentences])
 
-    notes = run_qc_common(instruction, candidate_text, min_words=30, max_words=int(seed["word_count"] * 2))
+    notes = run_qc_common(meta_instruction, candidate_text, min_words=30, max_words=int(seed["word_count"] * 2))
     orig_words = seed["word_count"]
     cand_words = len(candidate_text.split())
     if orig_words and abs(cand_words - orig_words) / orig_words > 0.4:
         notes.append(f"length_drift_vs_original({cand_words}_vs_{orig_words})")
     if diff["structure_drift"]:
-        notes.append("structure_drift")
+        # Informative, not disqualifying: essay-level ground truth ("this
+        # essay was AI-polished") holds regardless of how much internal
+        # restructuring occurred -- unlike the old design, this no longer
+        # invalidates the sample, since no sentence-level claim depends on it.
+        notes.append("structure_drift_observed")
 
-    qc_status = "rejected" if "structure_drift" in notes or "empty_output" in notes else ("flagged" if notes else "passed")
+    qc_status = "rejected" if "empty_output" in notes else ("flagged" if notes else "passed")
 
     return {
         "record": make_sample_record(
@@ -224,19 +296,37 @@ def generate_polish(seed: dict, split: str, category: str) -> dict:
             transformation_type=category,
             source_sample_id=f"{seed['id']}__human",
             text=candidate_text,
-            ground_truth_confidence="approximate",
-            modified_spans=None,  # filled in during post-hoc threshold analysis
+            ground_truth_confidence="essay_level_only",
+            modified_spans=None,  # never derived from alignment for this regime -- see docstring
             generation_config=result.generation_config,
             prompt_template_id=f"{category}_v1",
             target_length_words=orig_words,
             qc_status=qc_status,
             qc_notes=notes,
         ),
-        "diff": diff,
+        "diff": diff,  # diagnostic export only (diffs.json)
     }
 
 
-def generate_sentence_rewrite(seed: dict, split: str) -> dict:
+def generate_sentence_transform(
+    seed: dict,
+    split: str,
+    category: str,
+    instruction_template: str,
+    meta_instruction: str,
+    temperature: float,
+    expected_length_ratio_range: tuple[float, float],
+) -> dict:
+    """Regime A (surgical sentence-level transformation). Shared by
+    `sentence_rewrite_single` (full-rewrite instruction) and the
+    post-pilot controlled-span additions (`sentence_light_controlled`,
+    `sentence_moderate_controlled`) -- same splice mechanism and the same
+    exact-ground-truth guarantee, only the instruction wording and the
+    documented intended length-modification scope differ per category
+    (`expected_length_ratio_range` -- e.g. light edits should stay close
+    to 1.0x the original sentence's length; a full rewrite is allowed a
+    wider range). Deviation from that documented scope is flagged, not
+    silently ignored -- see the `modification_scope` QC note below."""
     original_text = normalize_text(seed["full_text"])
     doc = parse_document(original_text)
     sentences = segment_sentences(original_text, doc=doc)
@@ -245,29 +335,42 @@ def generate_sentence_rewrite(seed: dict, split: str) -> dict:
     idx = gu.pick_rewrite_sentence_index(sentence_texts, rng_seed=RNG_SEED)
     if idx is None:
         return make_sample_record(
-            sample_id=f"{seed['id']}__sentence_rewrite_single",
-            family_id=seed["id"], split=split, label="ai_assisted", transformation_type="sentence_rewrite_single",
+            sample_id=f"{seed['id']}__{category}",
+            family_id=seed["id"], split=split, label="ai_assisted", transformation_type=category,
             source_sample_id=f"{seed['id']}__human", text=None, ground_truth_confidence="high", modified_spans=None,
-            generation_config=None, prompt_template_id="sentence_rewrite_v1", target_length_words=None,
+            generation_config=None, prompt_template_id=f"{category}_v1", target_length_words=None,
             qc_status="skipped", qc_notes=["no_suitable_sentence_found"],
         )
 
     target = sentences[idx]
     before = sentence_texts[idx - 1] if idx > 0 else ""
     after = sentence_texts[idx + 1] if idx < len(sentence_texts) - 1 else ""
-    instruction = SENTENCE_REWRITE_INSTRUCTION.format(before=before, target=target.text, after=after)
+    instruction = instruction_template.format(before=before, target=target.text, after=after)
+    target_words = len(target.text.split())
 
-    max_new_tokens = gu.budget_max_new_tokens(len(target.text.split()) + 5)
+    max_new_tokens = gu.budget_max_new_tokens(target_words + 5)
     gen_seed = next_gen_seed()
-    result = qwen_generate.generate(instruction, max_new_tokens=max_new_tokens, temperature=0.8, top_p=0.95, seed=gen_seed)
+    result = qwen_generate.generate(instruction, max_new_tokens=max_new_tokens, temperature=temperature, top_p=0.95, seed=gen_seed)
     rewritten = normalize_text(result.text).strip().strip('"')
 
     spliced = original_text[: target.start_char] + rewritten + original_text[target.end_char :]
 
-    notes = run_qc_common(instruction, rewritten, min_words=2, max_words=max(80, len(target.text.split()) * 4))
+    notes = run_qc_common(meta_instruction, rewritten, min_words=2, max_words=max(80, target_words * 4))
+
+    # Documented modification-scope validation (Section 6, user instruction):
+    # does the output actually stay within the length ratio this category
+    # claims to target, or did it drift into a different category's territory?
+    rewritten_words = len(rewritten.split())
+    if target_words > 0 and rewritten:
+        ratio = rewritten_words / target_words
+        lo, hi = expected_length_ratio_range
+        if not (lo <= ratio <= hi):
+            notes.append(f"modification_scope_drift(ratio={ratio:.2f},expected=[{lo},{hi}])")
 
     # Correctness QC: re-segment the spliced essay and confirm sentence count is unchanged
     # and the target index now contains (approximately) the rewritten text.
+    # Kept as an unconditional hard-reject rule -- this is what Regime A/B's
+    # "exact ground truth" claim depends on; do not relax it.
     spliced_doc = parse_document(spliced)
     spliced_sentences = segment_sentences(spliced, doc=spliced_doc) if spliced_doc is not None else []
     resegmentation_ok = len(spliced_sentences) == len(sentences)
@@ -282,12 +385,22 @@ def generate_sentence_rewrite(seed: dict, split: str) -> dict:
     qc_status = "rejected" if "splice_resegmentation_mismatch" in " ".join(notes) or "empty_output" in notes else ("flagged" if notes else "passed")
 
     return make_sample_record(
-        sample_id=f"{seed['id']}__sentence_rewrite_single",
-        family_id=seed["id"], split=split, label="ai_assisted", transformation_type="sentence_rewrite_single",
+        sample_id=f"{seed['id']}__{category}",
+        family_id=seed["id"], split=split, label="ai_assisted", transformation_type=category,
         source_sample_id=f"{seed['id']}__human", text=spliced, ground_truth_confidence="high",
         modified_spans=modified_spans, generation_config=result.generation_config,
-        prompt_template_id="sentence_rewrite_v1", target_length_words=len(target.text.split()),
+        prompt_template_id=f"{category}_v1", target_length_words=target_words,
         qc_status=qc_status, qc_notes=notes,
+    )
+
+
+def generate_sentence_rewrite(seed: dict, split: str) -> dict:
+    """Thin wrapper: `sentence_rewrite_single` = generate_sentence_transform
+    with the full-rewrite instruction and a wide expected length ratio."""
+    return generate_sentence_transform(
+        seed, split, "sentence_rewrite_single",
+        SENTENCE_REWRITE_INSTRUCTION, SENTENCE_REWRITE_META,
+        temperature=0.8, expected_length_ratio_range=(0.3, 3.0),
     )
 
 
@@ -317,7 +430,7 @@ def generate_paragraph_rewrite(seed: dict, split: str) -> dict:
     new_paragraphs[idx] = rewritten_paragraph
     spliced = "\n\n".join(new_paragraphs)
 
-    notes = run_qc_common(instruction, rewritten_paragraph, min_words=5, max_words=max(200, len(target_paragraph.split()) * 4))
+    notes = run_qc_common(PARAGRAPH_REWRITE_META, rewritten_paragraph, min_words=5, max_words=max(200, len(target_paragraph.split()) * 4))
 
     spliced_doc = parse_document(spliced)
     spliced_sentences = segment_sentences(spliced, doc=spliced_doc) if spliced_doc is not None else []

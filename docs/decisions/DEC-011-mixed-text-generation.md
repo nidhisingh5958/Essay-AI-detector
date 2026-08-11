@@ -2,12 +2,40 @@
 
 ## Status
 Provisional — **partially invalidated by EXP-DATA-001 pilot evidence**
-(2026-08-10). The surgical-splice mechanism (sentence/paragraph rewrite)
-is confirmed working well. The whole-essay-instruction-plus-diff
-mechanism for light/moderate polish is **not working as designed** —
-see "Pilot Findings" below. Do not treat the polish-category design in
-this record as validated; it needs the revision described there before
-further use.
+(2026-08-10), **redesigned** the same day (see "Post-Pilot Methodology
+Redesign" below), redesign **targeted-validated by EXP-DATA-001-R1**
+(2026-08-10, 18 records — small, explicitly-scoped follow-up, not a full
+pilot re-run; see [reports/EXP-DATA-001-R1.md](../../reports/EXP-DATA-001-R1.md)).
+
+**R1 results:** Regime A/B (surgical splice, including the new
+controlled-span light/moderate categories) — 3/3, 3/3, 2/3, 2/3 passed
+respectively; the controlled-span mechanism's length control looked
+**dramatically better** at the single-sentence-span level (e.g. 12/12,
+17/17 words, target vs. actual) than the old whole-essay approach ever
+achieved, though n=3 per new category is too small to call this
+validated at scale — it's promising, not proven. One real failure was
+caught correctly (`modification_scope_drift` + `splice_resegmentation_mismatch`),
+not silently passed. **Regime C (`light_polish`) behaved exactly as
+redesigned**: all 3 samples got `ground_truth_confidence:
+"essay_level_only"` and `modified_spans: None` unconditionally, and 2/3
+showing `structure_drift_observed` were correctly *not* rejected for it.
+Zero instruction-leakage/AI-self-reference false positives observed
+(consistent with the QC fix, though R1 did not re-exercise `full_ai`
+specifically). One new, minor methodology gap found: the near-duplicate
+check needs to be scoped per-category (flagged a splice-based variant as
+"near-duplicate" of its own human original, which is expected given the
+mechanism, not a real problem — not yet fixed in code).
+
+The surgical-splice mechanism (sentence/paragraph rewrite) is confirmed
+working well and unchanged. The original whole-essay-instruction-plus-diff
+mechanism for light/moderate polish is **abandoned as a sentence-level
+ground-truth source** — replaced by the controlled-span mechanism (Regime
+A/B, same family as surgical splice, different instruction intensity).
+Whole-essay polish is retained only as an essay-level-only category
+(Regime C). Status stays **Provisional** (not Accepted): R1 is a small,
+targeted check, not full validation at scale — a larger run (~10 seeds,
+comparable to EXP-DATA-001's original scale) is needed before the
+controlled-span mechanism specifically is considered validated.
 
 ## Date
 2026-08-10
@@ -84,44 +112,47 @@ that category represents.
 
 ## Decision
 
-**Alternative C.** Concretely:
+**Alternative C, as originally adopted, then redesigned post-pilot** (see
+"Post-Pilot Methodology Redesign" below for the full reasoning). The
+**current** decision organizes every mixed category into exactly one of
+three ground-truth regimes:
 
-**Surgical-splice categories** (exact ground truth,
-`ground_truth_confidence: "high"`):
-- `sentence_rewrite_single`: one sentence selected (word count in a
-  sane range, e.g. 8–40 words, to avoid degenerate one-word "sentences"
-  from segmentation edge cases), rewritten with one sentence of context
-  on each side, spliced back at its exact character offsets.
+### Regime A — Surgical sentence-level transformation
+Exact ground truth, `ground_truth_confidence: "high"`. One sentence
+selected (word count in a sane range, e.g. 8–40 words, to avoid
+degenerate one-word "sentences" from segmentation edge cases), sent with
+one sentence of context on each side, and spliced back at its exact
+character offsets. The **instruction intensity is a parameter of this
+same mechanism**, not a different one:
+- `sentence_rewrite_single` — full rewrite instruction (original design,
+  validated in EXP-DATA-001).
+- `sentence_light_controlled` / `sentence_moderate_controlled` — same
+  splice mechanism, lighter/more constrained instruction wording
+  (post-pilot addition — see redesign section; validated at small scale
+  in EXP-DATA-001-R1).
 - `sentence_rewrite_multi`: 2–4 non-adjacent sentences, same mechanism
-  applied independently to each.
-- `paragraph_rewrite_single` / `paragraph_rewrite_multi`: same mechanism
-  at paragraph granularity.
+  applied independently to each (not yet exercised in any pilot).
 
-**Whole-essay + diff categories** (approximate ground truth,
-`ground_truth_confidence: "approximate"`, validated during QC):
-- `light_polish`: instruction constrains the model to grammar/word-choice
-  only, explicitly forbidding structural or content changes.
-- `moderate_polish`: instruction allows sentence-level rephrasing but not
-  reordering or content changes.
-- After generation, sentences are aligned by position (segmenting the
-  output with the same [DEC-005](DEC-005-sentence-segmentation.md)
-  pipeline) and compared to the original; a sentence is labeled AI-touched
-  only if it changed beyond a documented similarity threshold. **If
-  sentence count or order doesn't match closely enough to align
-  confidently, the sample is rejected by quality control (`structure_
-  drift`), not silently mislabeled** (see QC in
-  [generation-methodology.md](../generation-methodology.md)).
+### Regime B — Surgical paragraph-level transformation
+Exact ground truth, `ground_truth_confidence: "high"`. Same mechanism as
+Regime A at paragraph granularity (`\n\n`-delimited spans, confirmed
+surviving in ~95% of both acquired corpora — DEC-009).
+- `paragraph_rewrite_single` (validated in EXP-DATA-001).
+- `paragraph_rewrite_multi` (not yet exercised).
 
-**Essay-level-only category** (`ground_truth_confidence:
-"essay_level_only"` — no sentence-level claim made at all):
-- `heavy_revision`: instruction asks for substantial rewriting for
-  clarity/sophistication while preserving meaning and structure. By
-  design this touches most or all sentences, so localizing "which
-  sentences are AI" would be meaningless. This category is usable for
-  essay-level evaluation only and must be excluded (or specially flagged)
-  from sentence-level and passage-level evaluation metrics in Phase 10 —
-  documented here so that exclusion isn't forgotten or silently dropped
-  later without explanation.
+### Regime C — Whole-essay transformation
+**Essay-level-only ground truth, `ground_truth_confidence:
+"essay_level_only"` — no sentence-level claim is made, ever, for this
+regime.** Covers `light_polish`, `moderate_polish`, and `heavy_revision`.
+By design (and confirmed empirically — see Evidence) these can touch most
+or all sentences and may restructure/consolidate them, so localizing
+"which sentences are AI" is not meaningful. Sentence-diff/alignment MAY
+be computed for these categories, but **strictly as a diagnostic**
+(detecting gross structural drift, logging an observed similarity range
+for documentation) — **never** to derive a `modified_spans` label. This
+regime's samples must be excluded from sentence-level and passage-level
+evaluation metrics in Phase 10 — documented here so that exclusion isn't
+forgotten or silently dropped later.
 
 **Full machine generation** (not a "mixed" category, but sharing the same
 family/metadata scheme): every sentence is trivially AI-authored,
@@ -195,6 +226,100 @@ Per this pilot's explicit instructions, **no threshold was invented to
 paper over the structure_drift/diff findings** — the recommended fix
 (below) is a mechanism change, not a parameter tune.
 
+## Post-Pilot Methodology Redesign (2026-08-10)
+
+This section exists so the failure is legible on its own, not just
+implied by a status change:
+
+- **Observed similarity range:** light_polish 0.07–0.85 (24 pairs across
+  the 3 families that aligned); moderate_polish 0.09–0.97 (38 pairs
+  across 3 families). No pair in light_polish scored a perfect 1.0 —
+  i.e. even the sentences the pipeline could compare found *no* sentence
+  the model left completely untouched.
+- **No naturally separable threshold:** both distributions are
+  continuous/spread, not bimodal. There is no visible gap between
+  "lightly touched" and "heavily touched" sentences to place a cutoff at.
+  Picking a number anyway (e.g. "0.5") would be exactly the kind of
+  invented, unjustified threshold this project's discipline forbids.
+- **Sentence consolidation, not segmenter noise:** manually confirmed
+  (EXP-DATA-001 §7) — the model merges multiple original sentences into
+  fewer, more fluent ones even when explicitly instructed not to change
+  sentence count. This is a real property of how the model "polishes,"
+  not a bug in `sentence_segmenter.py`.
+- **Structural drift:** 70% of families (7/10) in both `light_polish` and
+  `moderate_polish` failed the exact-count alignment check entirely.
+- **Ambiguity of sentence-level attribution:** even setting the alignment
+  problem aside, the *concept* of "this specific original sentence maps
+  to that specific output sentence" breaks down once sentences are
+  merged/split/reordered — there may be no single correct answer to
+  "which output sentence corresponds to original sentence 3," making any
+  forced 1:1 label an artifact of the alignment algorithm rather than a
+  fact about the generation. This is a conceptual limit, not something a
+  better algorithm fully resolves.
+
+**Decision: do not attempt to rescue whole-essay polish as a
+sentence-level ground-truth source at all** — not via a threshold, and
+not via a more sophisticated alignment algorithm either (see next
+subsection for why `difflib`/sequence-alignment specifically was
+considered and rejected *for this purpose*, though retained for
+diagnostics). Instead:
+
+1. **Whole-essay polish becomes Regime C** (essay-level-only ground
+   truth, no sentence-level claim) — see the redesigned Decision section
+   above.
+2. **A new mechanism produces sentence-level light/moderate examples
+   instead: controlled-span transformation.** Apply the *same* surgical
+   splice mechanism already validated for `sentence_rewrite_single`/
+   `paragraph_rewrite_single` (Regimes A/B), but with a light- or
+   moderate-intensity instruction instead of a full-rewrite instruction.
+   Because the transformation is still applied to one pre-selected,
+   known span and spliced back at exact offsets, ground truth remains
+   exact regardless of how "light" or "moderate" the wording asks the
+   model to be — the *instruction intensity* varies, the *mechanism*
+   (and its ground-truth guarantee) does not.
+
+### Alternatives considered for the redesign specifically
+
+**Alternative D: Keep whole-essay diffing, but replace exact-count
+matching with `difflib.SequenceMatcher`-based sequence alignment
+(`get_opcodes()`) to recover partial ground truth from the 70%
+currently rejected.**
+Advantages: could recover some labeled data from families that currently
+produce nothing; handles merges/splits more gracefully than exact-count
+matching.
+Disadvantages: **this still tries to manufacture sentence-level labels
+from an inherently ambiguous transformation** (see "ambiguity of
+sentence-level attribution" above) — a `replace` opcode spanning 2
+original sentences and 1 output sentence doesn't tell you which *part*
+of the output sentence came from which original sentence, if that
+question even has an answer. Explicitly rejected for producing training/
+evaluation labels, **not** rejected as a tool — see next paragraph.
+
+**Alternative E (chosen): use `difflib`/alignment as a diagnostic only;
+produce sentence-level ground truth exclusively through the mechanism
+that already guarantees it (controlled-span splicing, Regimes A/B).**
+Advantages: never confuses "we can compute *a* diff" with "we know the
+ground truth" — the diagnostic use (detecting gross structural drift,
+reporting an observed similarity range in documentation) is exactly what
+`align_and_diff_sentences` is good for and was actually used for in
+EXP-DATA-001's report. Producing actual labeled sentence-level mixed
+samples goes through Regime A/B instead, where the guarantee is
+structural (we chose the span), not statistical (we measured a
+similarity score).
+Disadvantages: whole-essay-level "AI touched this essay somewhat, in a
+way that isn't localized" scenarios are no longer represented by a
+sentence-level-labeled example at all — only by a Regime C essay-level
+example. This is an honest limitation, not a gap to paper over: the
+project's dataset does not claim to have sentence-level ground truth for
+that realistic scenario, because no mechanism tested so far can produce
+it trustworthily.
+
+**Decision: Alternative E.** `difflib.SequenceMatcher` remains available
+in `generation_utils.align_and_diff_sentences` and continues to be used
+exactly as it was in EXP-DATA-001 §7 — as an inspection/diagnostic tool
+(structural-drift detection, documented similarity ranges) — but its
+output is never again written into a `modified_spans` field.
+
 ## Trade-offs
 
 The surgical-splice categories may read as slightly less globally
@@ -223,48 +348,75 @@ Negative:
 
 1. ~~EXP-DATA-001 pilot provides real examples to set the diff-similarity
    threshold~~ — **done, 2026-08-10: the pilot found no basis for setting
-   one** (see Evidence). What needs revisiting instead, before any further
-   generation:
-   - **Replace the exact-count-match alignment rule** with a proper
-     sequence-alignment algorithm (`difflib.SequenceMatcher` operating on
-     the sentence *list*, using `get_opcodes()` to find equal/replace/
-     insert/delete blocks) instead of requiring identical sentence counts.
-     This should recover usable, if block-level rather than strictly 1:1,
-     ground truth for most of the currently-rejected 70%, instead of
-     discarding them outright. **Proposed, not implemented** — implementing
-     and re-piloting this is explicitly out of scope for the point this
-     decision was updated at (EXP-DATA-001's stop condition).
-   - **Add a dedicated length-control mechanism** for `light_polish`/
-     `moderate_polish` (they currently reuse `full_ai`'s token budgeting,
-     which doesn't fit their "stay close to original length" goal).
-   - **Fix `check_prompt_leakage`** to exclude prompt/target-text content
-     from its comparison (an implementation bug, not a methodology
-     question — see Evidence).
-   - **After** those fixes, run a small follow-up pilot on just the
-     polish categories before deciding whether the model itself
-     (escalating to Phi-3.5-mini-instruct, DEC-010) also needs to change
-     — test the methodology fix and the model change one at a time, not
-     together, so it's clear which one (if either) actually helped.
-2. If paragraph boundaries turn out not to survive in the acquired
+   one.**
+2. ~~Replace the exact-count-match alignment rule with a proper
+   sequence-alignment algorithm to recover partial sentence-level ground
+   truth from whole-essay diffs~~ — **superseded, 2026-08-10: rejected
+   for this purpose after further consideration** (see "Post-Pilot
+   Methodology Redesign," Alternatives D/E) — sequence alignment doesn't
+   resolve the underlying ambiguity of attribution once sentences are
+   merged/split, it just produces a more sophisticated-looking guess.
+   Replaced by the controlled-span redesign instead.
+3. ~~Fix `check_instruction_leakage`'s scope~~ (formerly
+   `check_prompt_leakage`) — **done, 2026-08-10**: now takes a
+   meta-instruction-only argument; regression test preserved in
+   `scripts/tests/test_generation_utils.py`.
+4. ~~Run a small follow-up pilot on just the polish categories~~ — **done,
+   2026-08-10: EXP-DATA-001-R1**, see
+   [reports/EXP-DATA-001-R1.md](../../reports/EXP-DATA-001-R1.md) for
+   results and whether the redesign holds up.
+5. ~~Dedicated length-control mechanism for the controlled-span light/
+   moderate categories~~ — **partially addressed, 2026-08-10**: the
+   `modification_scope_drift` check (documented per-category expected
+   length-ratio range, flags rather than assumes compliance) was added
+   and caught a real violation in R1 (ratio 2.71 vs. expected [0.7,
+   1.3]). R1's *passing* samples showed excellent length match (e.g.
+   12/12, 17/17 words) without any additional truncation mechanism
+   needed at the span level — but n=3 per category is too small to
+   conclude the mechanism is sufficient at scale. **Still open**: confirm
+   this holds at a larger sample size before treating span-level length
+   control as solved.
+6. Still open: **near-duplicate check needs per-category scoping** — R1
+   found it flags a splice-based variant as "near-duplicate" of its own
+   human original, which is expected given the mechanism (only one
+   sentence differs) and not a real duplication problem, but the check
+   doesn't currently know that. Not yet fixed.
+7. Still open: whether the model itself (escalating to
+   Phi-3.5-mini-instruct, DEC-010) needs to change, now properly
+   separable from the methodology question since the methodology has
+   been redesigned and re-tested independently.
+8. Still open: **R1 did not re-exercise `full_ai` generation**, so the
+   `check_instruction_leakage` fix's real-world false-positive rate on
+   that specific category is confirmed only by the unit-level regression
+   test, not by a second live sample — worth checking in any future run
+   that includes `full_ai`.
+9. If paragraph boundaries turn out not to survive in the acquired
    corpus's raw text — **resolved, 2026-08-10: they do, in ~95% of
    essays** (see DEC-009's inspection update and
    [reports/dataset-inspection.md](../../reports/dataset-inspection.md)).
-   The surgical paragraph-rewrite mechanism using `\n\n` boundaries is
-   confirmed working (9/10 passed in the pilot).
 
 ## Implementation
 
-`scripts/run_exp_data_001.py` (pilot orchestrator), `scripts/generation_utils.py`
-(pure logic: `align_and_diff_sentences`, `pick_rewrite_sentence_index`,
-`pick_rewrite_paragraph_index`, QC checks), `scripts/qwen_generate.py`
-(model wrapper). The full-scale versions
-(`scripts/generate_samples.py`, `scripts/generate_mixed_samples.py`) do
-not exist yet and should incorporate the alignment-algorithm and
-length-control fixes above before being written, not before.
+`scripts/run_exp_data_001.py` (original pilot orchestrator, patched
+post-pilot for the QC fix and Regime C reclassification — not re-run in
+full), `scripts/run_exp_data_001_r1.py` (targeted validation of the
+controlled-span redesign), `scripts/generation_utils.py` (pure logic:
+`align_and_diff_sentences` — now documented as diagnostic-only,
+`check_instruction_leakage`, `check_ai_self_reference`,
+`pick_rewrite_sentence_index`, `pick_rewrite_paragraph_index`, other QC
+checks), `scripts/qwen_generate.py` (model wrapper). The full-scale
+versions (`scripts/generate_samples.py`, `scripts/generate_mixed_samples.py`)
+still do not exist and should follow the three-regime structure above
+when written.
 
 ## Tests / Experiments
 
-`scripts/tests/test_generation_utils.py` (19 tests, pure-logic fixtures).
-`EXP-DATA-001` — **executed 2026-08-10**, 60 real samples. Full results:
-[reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md). Design doc:
-`experiments/EXP-DATA-001-generation-pilot/README.md`.
+`scripts/tests/test_generation_utils.py` (pure-logic fixtures, including
+5 required instruction-leakage scenarios and a preserved regression test
+for the original false-positive bug). `EXP-DATA-001` — executed
+2026-08-10, 60 real samples, full results:
+[reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md) (preserved
+findings, not erased). `EXP-DATA-001-R1` — targeted redesign-validation,
+executed 2026-08-10, results:
+[reports/EXP-DATA-001-R1.md](../../reports/EXP-DATA-001-R1.md). Design
+doc: `experiments/EXP-DATA-001-generation-pilot/README.md`.

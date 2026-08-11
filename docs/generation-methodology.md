@@ -1,41 +1,57 @@
 # Machine & Mixed Text Generation Methodology
 
-> Status: **Pilot-tested (EXP-DATA-001, 2026-08-10).** The design below
-> was executed for real on 60 samples. Full results:
-> [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md). **The whole-
-> essay-instruction-plus-diff mechanism in Section 4 (light/moderate
-> polish) did not hold up** — 70% structure-drift rate — and needs the
-> revision described in
-> [DEC-011](decisions/DEC-011-mixed-text-generation.md)'s updated
-> "Revisit When" before further use. The full-generation (Section 3) and
-> surgical-splice (Section 4, sentence/paragraph rewrite) mechanisms are
-> validated and performed well. Treat Section 4's polish-category
-> description below as the *original* design, not a working mechanism, until
-> that revision lands. Related decisions:
+> Status: **Pilot-tested and redesigned (EXP-DATA-001 + EXP-DATA-001-R1,
+> 2026-08-10).** EXP-DATA-001 (60 samples) found the whole-essay-
+> instruction-plus-diff mechanism for light/moderate polish did not
+> reliably produce sentence-level ground truth (70% structural drift, no
+> separable similarity threshold — see
+> [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md)). Rather than
+> patching that mechanism with a threshold, it was **redesigned**: whole-
+> essay polish is now Regime C (essay-level-only ground truth, never used
+> for sentence metrics), and a new controlled-span mechanism produces
+> sentence-level light/moderate examples using the *same* surgical-splice
+> guarantee as the original sentence/paragraph rewrite categories. This
+> redesign was targeted-validated in EXP-DATA-001-R1 (15 samples) — see
+> [reports/EXP-DATA-001-R1.md](../reports/EXP-DATA-001-R1.md). The
+> document below reflects the current (post-redesign) methodology, not
+> the original pre-pilot sketch. Related decisions:
 > [DEC-010](decisions/DEC-010-machine-generation-model.md) (generation
 > model), [DEC-011](decisions/DEC-011-mixed-text-generation.md)
-> (mixed-sample mechanism).
+> (mixed-sample mechanism, including the full redesign rationale).
 
 ## 1. The core idea: families, not independent samples
 
 Every generated/derived sample traces back to exactly one human **seed
-essay**. A seed essay `S` (once the human corpus is acquired — DEC-009,
-not yet run) produces a **family** of samples:
+essay**. A seed essay `S` produces a **family** of samples, organized
+into the three ground-truth regimes [DEC-011](decisions/DEC-011-mixed-text-generation.md)
+settled on after EXP-DATA-001's pilot findings (original design tried a
+diff-based approach for whole-essay polish; that was abandoned for
+sentence-level use after the pilot — see DEC-011's "Post-Pilot
+Methodology Redesign" for why):
 
-| Sample | Label | How it's made |
-|---|---|---|
-| `S` itself | `human` | Already exists, unmodified |
-| `S.full_ai` | `machine` | Fully generated for the same prompt, same target length |
-| `S.light_polish` | `ai_assisted` | Whole-essay light copy-edit instruction, diffed |
-| `S.moderate_polish` | `ai_assisted` | Whole-essay moderate rephrase instruction, diffed |
-| `S.sentence_rewrite_single` | `ai_assisted` | One sentence surgically replaced |
-| `S.sentence_rewrite_multi` | `ai_assisted` | 2–4 sentences surgically replaced |
-| `S.paragraph_rewrite_single` | `ai_assisted` | One paragraph surgically replaced |
-| `S.paragraph_rewrite_multi` | `ai_assisted` | 2+ paragraphs surgically replaced |
-| `S.heavy_revision` | `ai_assisted` | Whole-essay heavy rewrite instruction (essay-level ground truth only) |
+| Sample | Label | Regime | How it's made |
+|---|---|---|---|
+| `S` itself | `human` | — | Already exists, unmodified |
+| `S.full_ai` | `machine` | — | Fully generated for the same prompt, same target length. **Validated, EXP-DATA-001.** |
+| `S.sentence_rewrite_single` | `ai_assisted` | A (sentence, exact) | One sentence surgically replaced, full-rewrite instruction. **Validated, EXP-DATA-001.** |
+| `S.sentence_light_controlled` | `ai_assisted` | A (sentence, exact) | Same splice mechanism, light-copy-edit instruction. **Redesign, EXP-DATA-001-R1.** |
+| `S.sentence_moderate_controlled` | `ai_assisted` | A (sentence, exact) | Same splice mechanism, moderate-reword instruction. **Redesign, EXP-DATA-001-R1.** |
+| `S.sentence_rewrite_multi` | `ai_assisted` | A (sentence, exact) | 2–4 sentences surgically replaced. Not yet exercised in any pilot. |
+| `S.paragraph_rewrite_single` | `ai_assisted` | B (paragraph, exact) | One paragraph surgically replaced. **Validated, EXP-DATA-001.** |
+| `S.paragraph_rewrite_multi` | `ai_assisted` | B (paragraph, exact) | 2+ paragraphs surgically replaced. Not yet exercised. |
+| `S.light_polish` | `ai_assisted` | C (essay-level only) | Whole-essay light copy-edit instruction. **Essay-level ground truth only — see below.** |
+| `S.moderate_polish` | `ai_assisted` | C (essay-level only) | Whole-essay moderate rephrase instruction. **Essay-level ground truth only.** |
+| `S.heavy_revision` | `ai_assisted` | C (essay-level only) | Whole-essay heavy rewrite instruction. Not yet exercised. |
 
-All 9 members of a family share `family_id = S.id` and **must stay
+All members of a family share `family_id = S.id` and **must stay
 together across train/validation/test splits** — see Section 6.
+
+**Regime C (whole-essay) samples carry `ground_truth_confidence:
+"essay_level_only"` and must never be used for sentence- or passage-level
+evaluation** — not because of a missing threshold, but because
+EXP-DATA-001 found the underlying transformation (sentence consolidation,
+70% structural drift) makes sentence-level attribution genuinely
+ambiguous, not just hard to measure. See DEC-011.
 
 This design directly satisfies the "don't let the detector learn topic
 differences" requirement: `S.full_ai` and every mixed variant are
@@ -53,26 +69,29 @@ kind of prompt taxonomy that fits genuine admissions essays. That doesn't
 fit the corpus DEC-009 actually selected: **PERSUADE 2.0 and ELLIPSE are
 argumentative and independent-prompt student essays, on their own fixed
 sets of prompts** (PERSUADE: 15 prompts across two task types; ELLIPSE:
-29 independent prompts) — not open-ended personal-narrative topics.
+44 independent prompts — corrected after acquisition; earlier research
+had estimated ~29, see `dataset-source-comparison.md`) — not open-ended
+personal-narrative topics.
 
 So prompts are **extracted from the acquired corpus's own metadata**,
 not invented ahead of time:
 
 ```
-scripts/extract_prompts.py   (not yet written -- depends on acquisition)
-  reads the acquired PERSUADE/ELLIPSE files
-  groups essays by their existing prompt/task field
-  writes data/prompts/<source>/<prompt_id>.json:
+scripts/extract_prompts.py   (written and run, 2026-08-10)
+  reads the acquired PERSUADE file
+  groups essays by their existing prompt_name/task field
+  writes data/prompts/persuade_2.0/<prompt_id>.json:
     { "prompt_id", "prompt_text", "task_type", "source_corpus",
-      "essay_count", "length_stats": {"mean", "median", "p10", "p90"} }
+      "essay_count", "length_stats_words": {"min", "median", "p10", "p90", "max"} }
 ```
 
 This is deliberately a *derived* artifact (generated by a script from
 real corpus metadata), not a hand-authored file — inventing specific
-prompt text here, before acquisition has even run, would mean guessing at
-content that must instead come from the real corpus. Writing this script
-is next after acquisition succeeds (blocked on Kaggle credentials, per
-[project-status.md](project-status.md)).
+prompt text here would mean guessing at content that must instead come
+from the real corpus. Run against the actual acquired PERSUADE file: 15
+prompt files written to `data/raw`-adjacent `data/prompts/persuade_2.0/`
+(gitignored, derived data), each with real instruction text pulled from
+the `assignment` column (2 tests in `scripts/tests/test_extract_prompts.py`).
 
 ## 3. Full machine generation (`full_ai`)
 
@@ -94,12 +113,14 @@ trivially certain).
 
 ## 4. Mixed/AI-assisted generation
 
-Per [DEC-011](decisions/DEC-011-mixed-text-generation.md), the mechanism
-depends on the category:
+Per [DEC-011](decisions/DEC-011-mixed-text-generation.md) (as redesigned
+post-EXP-DATA-001), every mixed category falls into exactly one of three
+ground-truth regimes:
 
-### Surgical-splice categories (exact ground truth)
+### Regime A/B — Surgical-splice categories (exact ground truth)
 
-`sentence_rewrite_single`, `sentence_rewrite_multi`,
+`sentence_rewrite_single`, `sentence_light_controlled`,
+`sentence_moderate_controlled`, `sentence_rewrite_multi`,
 `paragraph_rewrite_single`, `paragraph_rewrite_multi`:
 
 1. Segment `S` with the same sentence segmenter already built in Phase 2
@@ -109,39 +130,55 @@ depends on the category:
 2. Select target sentence(s)/paragraph(s) (word-count-filtered to avoid
    degenerate single-token "sentences").
 3. Send only the target span plus one sentence of surrounding context on
-   each side, with an instruction to rewrite just that span, preserving
-   meaning and matching tone/context.
+   each side, with an instruction to transform just that span, preserving
+   meaning and matching tone/context. **Instruction *intensity* (full
+   rewrite vs. light copy-edit vs. moderate reword) is a parameter of
+   this one mechanism** — `sentence_rewrite_single` and
+   `sentence_light_controlled`/`sentence_moderate_controlled` differ only
+   in which instruction wording is sent, not in how ground truth is
+   produced.
 4. Splice the result back into `S` at the exact original character
    offsets.
 5. Record the exact sentence-index range replaced as `modified_spans`.
+6. **Resegmentation safety check** (kept unconditionally, per explicit
+   instruction not to relax it): re-segment the spliced essay and confirm
+   the sentence count is unchanged. If it isn't — e.g. informal/run-on
+   original punctuation causing the parser to disagree after a splice —
+   **reject the sample** (`splice_resegmentation_mismatch`) rather than
+   guess at which sentence index is now correct. EXP-DATA-001 caught 2
+   real cases this way.
 
 Ground truth here needs no diffing: we chose exactly which sentences
-would be replaced, so we know exactly which ones are AI-authored.
+would be replaced, so we know exactly which ones are AI-authored,
+regardless of instruction intensity.
 
-### Whole-essay + diff categories (approximate ground truth)
+### Regime C — Whole-essay categories (essay-level-only ground truth)
 
-`light_polish`, `moderate_polish`:
+`light_polish`, `moderate_polish`, `heavy_revision`:
 
-1. Send the whole essay with an instruction scoped to that severity
-   (light: grammar/word-choice only, no structural change; moderate:
-   sentence-level rephrasing allowed, no reordering or content change).
-2. Segment both the original and the output with the same segmenter.
-3. If sentence counts don't align closely enough to compare position-by-
-   position, **reject the sample** (`structure_drift` — see Section 8,
-   QC) rather than guessing at alignment.
-4. Otherwise, compare each aligned sentence pair; sentences differing
-   beyond a similarity threshold are labeled AI-touched in
-   `modified_spans`. **The threshold value itself is not yet fixed** —
-   DEC-011 defers it to real examples from the pilot (EXP-DATA-001), not
-   a guessed number.
+1. Send the whole essay with an instruction scoped to that severity.
+2. **No sentence-level label is ever produced from this regime.**
+   `modified_spans` is always `None`; `ground_truth_confidence` is always
+   `"essay_level_only"`.
+3. Sentence-level diffing/alignment (`generation_utils.align_and_diff_sentences`)
+   MAY still be computed for this regime, but **strictly as a diagnostic**
+   — detecting gross structural drift and logging an observed similarity
+   range for documentation (as EXP-DATA-001's report did) — **never** to
+   populate `modified_spans`. EXP-DATA-001 found this regime's
+   transformations (measured: 70% structural drift, no sentence scoring a
+   perfect similarity match even where alignment succeeded) make
+   sentence-level attribution genuinely ambiguous, not just hard to
+   threshold — see DEC-011's "Post-Pilot Methodology Redesign" for the
+   full reasoning, including why a more sophisticated alignment algorithm
+   was considered and rejected for producing labels (Alternative D there).
+4. Structural drift observed during generation is logged as an
+   informative QC note, not grounds for rejection — the essay-level claim
+   ("this essay was AI-polished") holds regardless of how much internal
+   restructuring occurred.
 
-### Essay-level-only category
-
-`heavy_revision`: whole-essay heavy-rewrite instruction, no sentence-level
-claim made at all (`ground_truth_confidence: "essay_level_only"`). Usable
-for essay-level evaluation; must be excluded from sentence/passage-level
-evaluation metrics in Phase 10 (this exclusion is a deliberate design
-choice to remember, not an oversight to catch later).
+Usable for essay-level evaluation only; must be excluded from sentence/
+passage-level evaluation metrics in Phase 10 (this exclusion is a
+deliberate design choice to remember, not an oversight to catch later).
 
 ## 5. Length matching
 
@@ -203,21 +240,36 @@ hard to classify:
 2. Length within an absolute floor/ceiling (catches truncated or runaway
    generations) and within the target-length tolerance band for
    full-generation samples.
-3. No verbatim leakage of the instruction/prompt text into the output.
-4. No excessive repetition — reusing the repeated-bigram-ratio feature
+3. No verbatim leakage of the **meta-instructional wrapper** into the
+   output (`check_instruction_leakage`) — **compared only against the
+   meta/wrapper language, never against the source prompt, target
+   sentence/paragraph, or any other topic content the output is
+   *expected* to legitimately reference.** EXP-DATA-001 found the
+   original version of this check compared against the whole formatted
+   instruction (including embedded prompt text) and produced false
+   positives on every `full_ai` sample it flagged, since essays
+   naturally echo their own assigned topic. Fixed 2026-08-10; regression
+   test preserved in `scripts/tests/test_generation_utils.py`.
+4. No AI self-reference (`check_ai_self_reference`) — a distinct check
+   from instruction leakage, searching anywhere in the text (not just an
+   opening preamble) for phrases like "as an AI language model."
+5. No excessive repetition — reusing the repeated-bigram-ratio feature
    already built in `backend/app/services/feature_extractor.py` (Phase 3)
    against a generous ceiling, since a degenerate repetition loop is a
    known small-model failure mode and this project already has the
    exact measurement for it.
-5. No leftover instruction-following artifacts (e.g. a "Sure, here's the
+6. No leftover instruction-following artifacts (e.g. a "Sure, here's the
    rewritten sentence:" preamble the model failed to omit).
-6. For spliced samples: the final text must still segment cleanly with
-   the same sentence segmenter, and `modified_spans` offsets must
-   correctly slice the final text.
-7. For diff-based samples: `structure_drift` rejection if sentence
-   counts/order don't align closely enough to diff confidently (Section
-   4).
-8. Duplicate / near-duplicate detection: exact duplicates via a hash of
+7. For Regime A/B (surgical-splice) samples: the final text must still
+   segment cleanly with the same sentence segmenter, and `modified_spans`
+   offsets must correctly slice the final text — the
+   `splice_resegmentation_mismatch` check (Section 4) is a hard rejection
+   here, unconditionally, since it's the guarantee the whole regime's
+   "exact ground truth" claim rests on.
+8. For Regime C (whole-essay) samples: structural drift is logged as an
+   informative note, not a rejection reason (Section 4) — it no longer
+   invalidates the sample now that Regime C makes no sentence-level claim.
+9. Duplicate / near-duplicate detection: exact duplicates via a hash of
    normalized text; near-duplicates via n-gram overlap between
    full-generation samples that share a prompt (flagging, e.g., >0.6
    Jaccard similarity on word 5-grams as a candidate near-duplicate,
@@ -275,25 +327,33 @@ Field notes:
 
 ## 10. What this document does not cover yet
 
-- The exact diff-similarity threshold and structure-drift tolerance
-  (Section 4) — deferred to pilot evidence.
-- The exact length-tolerance band (±15% above is a starting point, not
-  validated).
-- `scripts/extract_prompts.py`, `scripts/generate_samples.py`,
-  `scripts/generate_mixed_samples.py` — none exist yet; all depend on the
-  human corpus actually being acquired first (blocked on Kaggle
-  credentials, [DEC-009](decisions/DEC-009-human-dataset-source.md)).
-- Whether the acquired corpora's raw files preserve paragraph boundaries
-  well enough for the paragraph-level categories to work as designed —
-  unknown until the files are actually inspected.
+- A diff-similarity threshold for Regime C was investigated and
+  deliberately **not set** — EXP-DATA-001 found no separable distribution
+  to threshold, and Regime C no longer needs one (see Section 4).
+- Length control for the new controlled-span light/moderate categories
+  (Regime A) — check EXP-DATA-001-R1's findings; not yet confirmed
+  whether span-level length drift is also a problem.
+- `scripts/generate_samples.py`, `scripts/generate_mixed_samples.py`
+  (full-scale, production versions) — still don't exist; should follow
+  the three-regime structure once written. `scripts/extract_prompts.py`
+  exists and has been run for real (Section 2).
+- `sentence_rewrite_multi`, `paragraph_rewrite_multi` — designed, not yet
+  exercised in any pilot.
 
-## 11. Pilot before scale
+## 11. Pilots run so far
 
-Before generating anything close to a full dataset, a small pilot
-(**EXP-DATA-001**, design only — see
-`experiments/EXP-DATA-001-generation-pilot/`) will generate a handful of
-families and manually inspect generation quality, length-distribution
-match, transformation realism, metadata correctness, sentence-level
-provenance accuracy, and duplicate rates. The pilot is a **data-generation
-validation step**, not a detector-performance evaluation — no
-classification or accuracy claim will be made from it.
+**EXP-DATA-001** (2026-08-10, 60 samples, 10 seeds × 6 categories):
+validated `full_ai` and the original surgical-splice categories; found
+the whole-essay-diff mechanism for light/moderate polish did not produce
+reliable sentence-level ground truth. Full results:
+[reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md) — preserved as
+project history, not overwritten by the redesign.
+
+**EXP-DATA-001-R1** (2026-08-10, targeted validation of the post-pilot
+redesign — controlled-span light/moderate categories, Regime C
+reclassification, and the QC leakage fix): see
+[reports/EXP-DATA-001-R1.md](../reports/EXP-DATA-001-R1.md).
+
+Both are **data-generation validation experiments**, not
+detector-performance evaluations — no classification or accuracy claim
+is made from either.

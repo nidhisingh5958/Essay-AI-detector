@@ -165,12 +165,25 @@ def check_length_bounds(word_count: int, min_words: int, max_words: int) -> bool
     return min_words <= word_count <= max_words
 
 
-def check_prompt_leakage(instruction: str, output: str, min_overlap_words: int = 6) -> bool:
+def check_instruction_leakage(meta_instruction: str, output: str, min_overlap_words: int = 6) -> bool:
     """True if a run of `min_overlap_words` consecutive words from the
-    instruction appears verbatim in the output -- a cheap, specific
-    signal of the model echoing its own instructions rather than
-    producing the requested content."""
-    instr_words = _WHITESPACE_RE.sub(" ", instruction.lower()).split()
+    META-instructional wrapper appears verbatim in the output -- a
+    cheap, specific signal of the model echoing its own meta-instructions
+    ("Write a ... essay ... Return only the essay, with no preamble...")
+    rather than producing the requested content.
+
+    CALLERS MUST PASS ONLY THE META/WRAPPER LANGUAGE HERE -- never the
+    source prompt text, the target sentence/paragraph, or any other
+    topic content the output is *expected* to legitimately reference.
+    EXP-DATA-001 found the previous version of this check (which compared
+    against the whole formatted instruction, including embedded prompt
+    text) produced false positives whenever a generated essay discussed
+    its own assigned topic using similar wording to the prompt -- that is
+    correct, on-topic behavior, not leakage. See DEC-011's "Pilot
+    Findings" and `scripts/tests/test_generation_utils.py`'s regression
+    test for the preserved failure case.
+    """
+    instr_words = _WHITESPACE_RE.sub(" ", meta_instruction.lower()).split()
     out_norm = _WHITESPACE_RE.sub(" ", output.lower())
     if len(instr_words) < min_overlap_words:
         return False
@@ -179,6 +192,32 @@ def check_prompt_leakage(instruction: str, output: str, min_overlap_words: int =
         if chunk in out_norm:
             return True
     return False
+
+
+_AI_SELF_REFERENCE_PHRASES = (
+    "as an ai",
+    "as an artificial intelligence",
+    "as a language model",
+    "as an ai language model",
+    "i am an ai",
+    "i'm an ai",
+    "i do not have personal experiences",
+    "i don't have personal experiences",
+    "i don't have personal feelings",
+    "as a large language model",
+)
+
+
+def check_ai_self_reference(output: str) -> bool:
+    """True if the output contains a phrase where the model reveals
+    itself as an AI (e.g. 'as an AI language model, I don't have
+    personal experiences...') -- a distinct failure mode from
+    instruction-wrapper leakage (check_instruction_leakage) or a
+    generation preamble (check_instruction_artifacts). Searches anywhere
+    in the text, not just the start, since this kind of self-reference
+    often appears mid-essay as a caveat rather than as an opening line."""
+    normalized = _WHITESPACE_RE.sub(" ", output.lower())
+    return any(phrase in normalized for phrase in _AI_SELF_REFERENCE_PHRASES)
 
 
 def check_excessive_repetition(words: list[str], n: int = 3, ratio_ceiling: float = 0.3) -> tuple[bool, float]:
@@ -198,7 +237,10 @@ def check_excessive_repetition(words: list[str], n: int = 3, ratio_ceiling: floa
 
 def check_instruction_artifacts(output: str) -> bool:
     """True if the output starts with a common instruction-following
-    preamble the model failed to omit (e.g. 'Sure, here's...')."""
+    preamble the model failed to omit (e.g. 'Sure, here's...'). AI
+    self-reference ('as an AI...') is a separate check
+    (check_ai_self_reference) since it can appear anywhere in the text,
+    not just as an opening preamble."""
     artifacts = (
         "sure,",
         "sure!",
@@ -206,7 +248,6 @@ def check_instruction_artifacts(output: str) -> bool:
         "here's",
         "certainly",
         "of course",
-        "as an ai",
     )
     normalized = output.strip().lower()
     return any(normalized.startswith(a) for a in artifacts)

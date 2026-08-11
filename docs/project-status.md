@@ -2,9 +2,9 @@
 
 ## Current Phase
 
-EXP-DATA-001 pilot complete (executed for real). **Stopped for review**
-per explicit instruction — no scaling, no detector work, no EXP-003
-started.
+EXP-DATA-001-R1 complete (targeted redesign validation, executed for
+real). **Stopped for review** per explicit instruction — no scaling, no
+detector work, no EXP-003 started.
 
 ## Completed
 
@@ -16,131 +16,134 @@ started.
       (DEC-006, Provisional)
 - [x] Phase 4 — Local language-model instrumentation via `distilgpt2`
       (DEC-007, DEC-008)
-- [x] Phase 5, steps 1–2 — Human dataset source evaluation + acquisition
-      pipeline built ([DEC-009](decisions/DEC-009-human-dataset-source.md))
+- [x] Phase 5 — Human dataset source evaluation, acquisition pipeline,
+      live acquisition + inspection
+      ([DEC-009](decisions/DEC-009-human-dataset-source.md): Accepted)
 - [x] Phase 5B — Machine/mixed generation design
       ([DEC-010](decisions/DEC-010-machine-generation-model.md),
-      [DEC-011](decisions/DEC-011-mixed-text-generation.md),
-      [generation-methodology.md](generation-methodology.md))
-- [x] Qwen2.5-1.5B-Instruct downloaded and smoke-tested
-- [x] **Phase 5C — Live acquisition + inspection:**
-  - Repo-local `.kaggle/kaggle.json` deleted (redundant with
-    `~/.kaggle/access_token`, which is what actually authenticates);
-    confirmed via `git ls-files` that no credential was ever tracked.
-  - Fixed a real bug found via live data: `dataset.licenseName` (assumed
-    from research) → `dataset.license_name` (the actual `kaggle` package
-    attribute). Refuse-on-mismatch logic itself unchanged.
-  - **Both corpora live-license-verified and acquired**: PERSUADE 2.0 and
-    ELLIPSE, both `CC BY-NC-SA 4.0` — resolving DEC-009's open PERSUADE
-    discrepancy.
-  - **Full inspection performed** —
-    [reports/dataset-inspection.md](../reports/dataset-inspection.md).
-    Key findings: PERSUADE's real essay file is
-    `persuade_2.0_human_scores_demo_id_github.csv` (not the 852MB
-    discourse-annotated `_1.0` file); its `word_count` column is
-    unreliable for ~5% of rows (worst case 48x off); paragraph boundaries
-    (`\n\n`) survive in ~95% of essays in both corpora; PERSUADE itself
-    carries an `ell_status` field; ELLIPSE has 44 prompts (not ~29 as
-    earlier research estimated, corrected in place); both corpora
-    negligibly duplicated.
-  - **[DEC-009](decisions/DEC-009-human-dataset-source.md): Provisional
-    → Accepted.**
-- [x] **EXP-DATA-001 pilot — executed for real, 2026-08-10** (this
-      update). 10 seed PERSUADE essays × 6 categories (human, full_ai,
-      light_polish, moderate_polish, sentence_rewrite_single,
-      paragraph_rewrite_single) = 60 samples. Full results:
+      [DEC-011](decisions/DEC-011-mixed-text-generation.md))
+- [x] EXP-DATA-001 — full pilot executed (60 samples). Found the
+      whole-essay-instruction-plus-diff mechanism for light/moderate
+      polish unreliable for sentence-level ground truth (70% structural
+      drift). Findings preserved:
       [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md).
-  - New code: `scripts/generation_utils.py` (19 tests, pure logic:
-    length budgeting, sentence-diff alignment, seed selection, family-
-    split assignment, QC checks), `scripts/qwen_generate.py` (model
-    wrapper), `scripts/extract_prompts.py` (2 tests; run for real against
-    PERSUADE, wrote 15 prompt files to `data/prompts/persuade_2.0/`),
-    `scripts/run_exp_data_001.py` (orchestrator), `scripts/analyze_exp_data_001.py`
-    (post-hoc analysis).
-  - **What worked:** full-essay generation (7/10 clean QC pass, 3/10
-    only flagged by a QC bug — see below) and surgical-splice rewrites
-    (sentence: 6/10 clean, 9/10 including a real correctness catch;
-    paragraph: 9/10 clean). Zero near-duplicates. Zero metadata-schema
-    violations. Zero leakage-invariant violations (family/split
-    consistency verified programmatically across all 60 samples).
-  - **What didn't work:** `light_polish`/`moderate_polish` (whole-essay-
-    instruction-plus-diff mechanism) failed at **70% structure-drift**
-    — the model consolidates/restructures sentences despite explicit
-    instructions not to (confirmed via manual inspection, not a
-    segmenter bug). Even the 30% that aligned showed a continuous,
-    non-separable similarity distribution — **no diff-similarity
-    threshold could be responsibly set from this data**, so none was
-    invented.
-  - **QC bug found and diagnosed:** `check_prompt_leakage` compared
-    against the whole instruction (including the embedded essay prompt),
-    flagging essays for legitimately discussing their own prompt. All 3
-    flagged `full_ai` samples were false positives on manual review.
-  - **Real correctness catch validated:** `splice_resegmentation_mismatch`
-    QC check caught 2 genuine edge cases (informal run-on student
-    writing causing re-segmentation to disagree after a splice) and
-    correctly rejected them rather than producing wrong ground truth.
-  - **[DEC-011](decisions/DEC-011-mixed-text-generation.md) updated:**
-    status changed to "Provisional — partially invalidated by pilot
-    evidence." Proposed fix (not implemented): replace exact-sentence-
-    count-match alignment with `difflib.SequenceMatcher`-based sequence
-    alignment on sentence lists; add dedicated length control for polish
-    categories; fix the prompt-leakage check's scope.
-  - **[DEC-010](decisions/DEC-010-machine-generation-model.md) updated:**
-    model quality confirmed good where cleanly tested (full generation,
-    surgical splice); polish-category failures not yet attributable to
-    the model specifically vs. the methodology — flagged as needing a
-    one-variable-at-a-time follow-up test.
-  - Per instructions, **no threshold was invented to force a passing
-    result**, and **no regeneration was attempted to make the numbers
-    look better** — the methodology problem is documented and a fix is
-    proposed, not silently patched.
+- [x] **This update — QC fix, DEC-011 redesign, and EXP-DATA-001-R1:**
+  - Repo-local `.kaggle/kaggle.json` re-confirmed deleted; only
+    `~/.kaggle/access_token` remains; nothing ever tracked.
+  - **QC bug fixed**: `check_prompt_leakage` → `check_instruction_leakage`
+    (takes meta-instruction-only argument, never prompt/target content)
+    + new `check_ai_self_reference` (searches anywhere in text, not just
+    as a preamble). 6 new tests added, including a preserved regression
+    test reproducing the original false-positive bug and asserting the
+    fix resolves it. `run_exp_data_001.py` patched to use the fix
+    (not re-run in full — see below).
+  - **DEC-011 redesigned, not patched with a threshold**: formalized
+    three ground-truth regimes —
+    - **Regime A** (surgical sentence transformation, exact truth):
+      `sentence_rewrite_single` (unchanged) plus two **new** categories,
+      `sentence_light_controlled` / `sentence_moderate_controlled` — same
+      splice mechanism, lighter instruction wording, ground truth stays
+      exact because the mechanism (not the wording) is what guarantees it.
+    - **Regime B** (surgical paragraph transformation, exact truth):
+      `paragraph_rewrite_single` (unchanged).
+    - **Regime C** (whole-essay, essay-level-only): `light_polish`,
+      `moderate_polish`, `heavy_revision` — **never** used for
+      sentence-level claims; sentence-diffing retained only as a
+      diagnostic (structural-drift detection, documented similarity
+      ranges), explicitly never used to manufacture `modified_spans`.
+    - Explicitly recorded: observed similarity range (0.07–0.97, no
+      separable cluster), sentence consolidation, structural drift (70%),
+      and the conceptual ambiguity of sentence-level attribution once
+      sentences merge/split — a sequence-alignment algorithm
+      (`difflib.SequenceMatcher` on sentence lists) was considered and
+      explicitly **rejected as a ground-truth source** (though kept as a
+      diagnostic tool) because it doesn't resolve that ambiguity, just
+      produces a more sophisticated-looking guess.
+  - **EXP-DATA-001-R1 executed** (18 records: 3 seeds × 6 categories,
+    distinct seeds from the original pilot) — a small, explicitly-scoped
+    validation, not a new full pilot. Results:
+    [reports/EXP-DATA-001-R1.md](../reports/EXP-DATA-001-R1.md).
+    - Regime A/B unchanged categories: 3/3, 3/3 passed.
+    - **New controlled-span categories: 2/3, 2/3 passed, with
+      dramatically better length control than the old whole-essay
+      approach** (e.g. 12/12, 17/17 words target vs. actual) — promising,
+      but n=3 per category is too small to call validated at scale.
+    - One real failure caught correctly, not silently passed:
+      `modification_scope_drift` (ratio 2.71 vs. expected [0.7, 1.3]) +
+      `splice_resegmentation_mismatch`.
+    - **Regime C confirmed behaving exactly as redesigned**: all 3
+      `light_polish` samples got `ground_truth_confidence:
+      "essay_level_only"` and `modified_spans: None` unconditionally;
+      2/3 showing `structure_drift_observed` were correctly *not*
+      rejected for it.
+    - Zero instruction-leakage/AI-self-reference flags across all 18
+      records (consistent with the QC fix; `full_ai` wasn't re-exercised
+      in R1, so this specific category's real-world false-positive rate
+      is confirmed only by the unit regression test, not a second live
+      sample — noted as an open item).
+    - New minor finding: near-duplicate check needs per-category scoping
+      (flagged a splice variant as "near-duplicate" of its own human
+      original — expected given the mechanism, not a real problem, but
+      not yet fixed in code).
+  - `docs/failure-analysis.md` populated with Part 1 (data generation
+    pipeline failures, EXP-DATA-001) — clearly separated from Part 2
+    (detector failures, still a placeholder since no detector exists).
+  - Documentation updated: `generation-methodology.md` (three-regime
+    structure, corrected ELLIPSE prompt count, `extract_prompts.py`
+    marked as run), `decision-summary.md`, this file.
 
 ## In Progress
 
 - [ ] **Stopped for review, as explicitly instructed.** Not scaling the
       dataset, not training/evaluating a detector, not starting EXP-003.
-- [ ] Implementing the proposed DEC-011 alignment fix (sequence-based
-      diffing) — proposed, not started.
-- [ ] Adding dedicated length control for polish categories — proposed,
-      not started.
-- [ ] Fixing `check_prompt_leakage`'s scope — proposed, not started.
-- [ ] A follow-up pilot on just the polish categories, after the above
-      fixes — not started.
+- [ ] Confirming the controlled-span redesign at larger scale (~10 seeds)
+      before treating it as validated — proposed, not started.
+- [ ] Near-duplicate check per-category scoping fix — proposed, not
+      implemented.
+- [ ] `sentence_rewrite_multi`, `paragraph_rewrite_multi` — designed, not
+      yet exercised in any pilot.
 
 ## Experiments
 
-- `EXP-DATA-001` — **executed 2026-08-10.** Results:
-  [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md). Data-generation-
-  pipeline validation only; no detector accuracy claims made or implied.
+- `EXP-DATA-001` — executed 2026-08-10, 60 samples. Results:
+  [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md). Preserved as
+  project history.
+- `EXP-DATA-001-R1` — executed 2026-08-10, 18 records, targeted redesign
+  validation. Results: [reports/EXP-DATA-001-R1.md](../reports/EXP-DATA-001-R1.md).
+
+Both are data-generation-pipeline validation experiments; neither
+involves a detector, and no detection accuracy/F1/generalization claim
+is made from either.
 
 ## Current Known Problems
 
-- Light/moderate polish mixed-sample categories are **not usable as
-  currently designed** — see DEC-011.
-- `check_prompt_leakage` produces false positives when the instruction
-  embeds prompt/target text the output is expected to reference — fix
-  proposed, not applied.
-- No dedicated length-control mechanism exists for polish categories.
-- `generation_model_revision` metadata falls back to the bare model name
-  rather than a pinned commit SHA — minor reproducibility gap.
-- Raw PERSUADE text contains non-breaking-space characters (`\xa0`) not
-  fully handled by `text_normalizer.py` — cosmetic, seen in a couple of
-  spliced pilot outputs.
+- The controlled-span light/moderate mechanism is promising but
+  validated only at n=3 per category — needs a larger run before being
+  treated as solved.
+- Near-duplicate detection needs per-category scoping (false positive
+  found, not yet fixed).
+- `check_instruction_leakage`'s fix wasn't re-exercised against a live
+  `full_ai` sample in R1 — confirmed by unit test only for that specific
+  category.
 - PERSUADE's `word_count` column and 4 duplicate `essay_id_comp` values
   still need explicit handling in future preprocessing code (documented
   since Phase 5C, unchanged).
+- Both selected human corpora remain a domain mismatch with real
+  admissions essays (unchanged conclusion, documented since Phase 5C).
 - The application still does not classify or score essays — none of this
-  phase's work touches the detector itself.
+  work touches the detector itself.
 
 ## Decisions Pending
 
-- Whether to implement the DEC-011 sequence-alignment fix before or
-  alongside a Phi-3.5-mini-instruct follow-up test (DEC-010 recommends
-  testing one variable at a time)
-- Diff-similarity threshold for polish categories — still open, now with
-  a clearer path (fix alignment first, then re-examine)
+- Whether to run a larger-scale confirmation of the controlled-span
+  mechanism before considering DEC-011 ready to move from Provisional to
+  Accepted
+- Whether the model itself (Phi-3.5-mini-instruct escalation, DEC-010)
+  needs testing, now properly separable from the methodology question
+- Near-duplicate check scoping fix
 - Train/validation/test split ratios/stratification specifics beyond the
-  family-level invariant (already fixed and verified working)
+  family-level invariant (already fixed and verified working across both
+  EXP-DATA-001 and EXP-DATA-001-R1)
 - Which Phase 3/4 features are actually retained once EXP-002/EXP-003 can
   be run
 - Scoring/calibration method (Phase 6)
@@ -148,13 +151,11 @@ started.
 
 ## Next Steps (pending review — not started)
 
-1. User reviews EXP-DATA-001 findings and the proposed DEC-011 fix.
-2. If approved: implement the `difflib`-based sequence-alignment
-   redesign for `light_polish`/`moderate_polish`, add dedicated length
-   control, fix `check_prompt_leakage`'s scope.
-3. Run a small follow-up pilot on just the polish categories to confirm
-   the fix works before considering a model change.
-4. Only after that: consider scaling generation, which remains a
-   separate, explicit decision — not an automatic consequence of a
-   passing pilot.
-5. Update this file at each step.
+1. User reviews EXP-DATA-001-R1 findings and the DEC-011 redesign.
+2. If approved: run a larger-scale (~10 seed) confirmation of the
+   controlled-span mechanism specifically, and fix the near-duplicate
+   scoping gap.
+3. Only after that: consider scaling generation — a separate, explicit
+   decision, not an automatic consequence of a passing validation check.
+4. Continue to hold off on any detector work (training, evaluation,
+   EXP-003) until the dataset pipeline itself is considered ready.

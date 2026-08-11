@@ -4,11 +4,12 @@ from generation_utils import (
     align_and_diff_sentences,
     assign_family_splits,
     budget_max_new_tokens,
+    check_ai_self_reference,
     check_empty_output,
     check_excessive_repetition,
     check_instruction_artifacts,
+    check_instruction_leakage,
     check_length_bounds,
-    check_prompt_leakage,
     modified_sentence_indices,
     near_duplicate_pairs,
     pick_rewrite_paragraph_index,
@@ -118,12 +119,90 @@ def test_check_length_bounds():
     assert check_length_bounds(300, min_words=50, max_words=200) is False
 
 
-def test_check_prompt_leakage_detects_verbatim_instruction_overlap():
-    instruction = "Rewrite only the following sentence, preserving its meaning, without commentary."
-    leaking_output = "Rewrite only the following sentence, preserving its meaning, here you go."
-    clean_output = "The volunteer experience shaped how she saw her community."
-    assert check_prompt_leakage(instruction, leaking_output, min_overlap_words=6) is True
-    assert check_prompt_leakage(instruction, clean_output, min_overlap_words=6) is False
+# --- check_instruction_leakage: the 5 scenarios required after the
+# EXP-DATA-001 QC bug fix (meta-instruction only, never prompt/essay
+# content) ---
+
+META_INSTRUCTION = (
+    "Write a persuasive essay of approximately 163 words responding to the "
+    "following prompt. Write in the voice of a student. Return only the "
+    "essay, with no preamble or title."
+)
+
+
+def test_leakage_1_legitimate_topic_wording_passes():
+    # Mirrors the real EXP-DATA-001 false positive: essay content overlaps
+    # with the *prompt* ("...bring their phones to school and use them
+    # during..."), which is never passed to this check -- only the meta
+    # wrapper above is.
+    output = (
+        "I support allowing students to bring their phones to school and use "
+        "them during lunch, as long as they stay off during class time."
+    )
+    assert check_instruction_leakage(META_INSTRUCTION, output) is False
+
+
+def test_leakage_2_actual_instruction_leakage_fails():
+    output = (
+        "Write a persuasive essay of approximately 163 words responding to "
+        "the following prompt, as you requested. Phones are useful tools."
+    )
+    assert check_instruction_leakage(META_INSTRUCTION, output) is True
+
+
+def test_leakage_3_ai_self_reference_flagged_separately():
+    output = (
+        "Phones can be distracting in class. As an AI language model, I "
+        "don't have personal experiences with school policies, but I can "
+        "offer some perspective."
+    )
+    assert check_ai_self_reference(output) is True
+    # Not necessarily an instruction-wrapper leak -- distinct failure mode.
+    assert check_instruction_leakage(META_INSTRUCTION, output) is False
+
+
+def test_leakage_4_generation_preamble_flagged_by_artifacts_check():
+    output = "Sure, here's the essay: Phones can be distracting in class."
+    assert check_instruction_artifacts(output) is True
+
+
+def test_leakage_5_normal_essay_discussing_its_prompt_passes():
+    output = (
+        "Community service teaches students responsibility. Volunteering at "
+        "a shelter or park cleanup builds character and connects students "
+        "to their neighborhoods."
+    )
+    assert check_instruction_leakage(META_INSTRUCTION, output) is False
+    assert check_ai_self_reference(output) is False
+    assert check_instruction_artifacts(output) is False
+
+
+def test_leakage_regression_old_bug_is_preserved_as_evidence():
+    """EXP-DATA-001 (2026-08-10) found that comparing against the WHOLE
+    formatted instruction -- including the embedded source prompt text --
+    produced false positives: a legitimate, on-topic essay got flagged
+    merely for echoing its own assigned topic's wording. This test
+    preserves that failure mode as a documented regression: feeding the
+    full instruction+prompt (the old, buggy call pattern) still flags a
+    clean essay, which is exactly why callers must now pass only the meta
+    wrapper (see check_instruction_leakage's docstring) and why
+    run_exp_data_001.py was changed to do so."""
+    whole_instruction_including_prompt = (
+        META_INSTRUCTION
+        + "\n\nPrompt: Your principal is reconsidering the school's cell phone "
+        "policy. Policy 1: Allow students to bring phones to school and use "
+        "them during lunch periods and other free times."
+    )
+    legitimate_essay = (
+        "I support Policy 1: allow students to bring phones to school and "
+        "use them during lunch periods and other free times, as long as "
+        "they remain off during class."
+    )
+    # The old (buggy) call pattern -- kept here only to prove the bug is
+    # real and stays caught, not as a recommended usage.
+    assert check_instruction_leakage(whole_instruction_including_prompt, legitimate_essay) is True
+    # The fixed call pattern -- meta wrapper only.
+    assert check_instruction_leakage(META_INSTRUCTION, legitimate_essay) is False
 
 
 def test_check_excessive_repetition_flags_degenerate_loop():
@@ -143,6 +222,12 @@ def test_check_instruction_artifacts_detects_common_preambles():
     assert check_instruction_artifacts("Sure, here's the rewritten sentence: ...") is True
     assert check_instruction_artifacts("Here's the essay you requested.") is True
     assert check_instruction_artifacts("Volunteering taught her patience.") is False
+
+
+def test_check_ai_self_reference_detects_mid_text_disclaimers():
+    assert check_ai_self_reference("As an AI, I don't have personal opinions, but here goes.") is True
+    assert check_ai_self_reference("Phones can be distracting. As a language model, I can't say for sure.") is True
+    assert check_ai_self_reference("Community service builds character and connects students to their town.") is False
 
 
 def test_near_duplicate_pairs_finds_matches_and_ignores_distinct_texts():
