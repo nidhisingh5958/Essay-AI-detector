@@ -27,7 +27,9 @@ Consequences, Revisit When, Implementation, Tests/Experiments.
 | [DEC-008](decisions/DEC-008-lm-scoring-method.md) | LM scoring: whole-essay single pass, not per-sentence | Accepted |
 | [DEC-009](decisions/DEC-009-human-dataset-source.md) | Human dataset source: PERSUADE 2.0 + ELLIPSE | Provisional |
 | [DEC-010](decisions/DEC-010-machine-generation-model.md) | Machine text generation model: Qwen2.5-1.5B-Instruct | Provisional (pilot-tested) |
-| [DEC-011](decisions/DEC-011-mixed-text-generation.md) | Mixed/AI-assisted text generation methodology | Provisional — partially invalidated by pilot |
+| [DEC-011](decisions/DEC-011-mixed-text-generation.md) | Mixed/AI-assisted text generation methodology | Provisional — category-specific (sentence-light confirmed at scale, promising; paragraph not ready; sentence-moderate not ready, redesign drafted) |
+| [DEC-012](decisions/DEC-012-semantic-preservation-screen.md) | Automated semantic-preservation screening signal | Accepted (screening only, never ground truth) |
+| [DEC-013](decisions/DEC-013-claim-survival-screen.md) | Paragraph-level claim-survival screening signal | Accepted (screening only — validated R3: 1 true positive caught, 2 false negatives on reversal-type drift) |
 
 This table grows as later phases introduce feature-selection, scoring,
 calibration, dataset, and fairness-methodology decisions.

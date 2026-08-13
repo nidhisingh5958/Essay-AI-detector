@@ -172,6 +172,9 @@ def make_sample_record(
     cross_family_duplicate_flag=False,
     semantic_preservation=None,
     semantic_preservation_notes=None,
+    automated_screen_similarity=None,
+    automated_screen_fact_check=None,
+    automated_screen_label=None,
 ):
     """Fields added for EXP-DATA-001-R1 confirmation-round measurability
     (all optional, default to None/False so EXP-DATA-001/R1's original
@@ -191,6 +194,10 @@ def make_sample_record(
     - semantic_preservation / semantic_preservation_notes: manual-review
       fields (see generation_utils.SEMANTIC_PRESERVATION_VALUES) --
       never set automatically to anything but "not_yet_reviewed" or None.
+    - automated_screen_similarity / automated_screen_fact_check /
+      automated_screen_label: DEC-012's screening signal (embedding
+      similarity + entity/number check), filled in post-hoc where used.
+      Advisory only -- never a substitute for semantic_preservation.
     """
     length_ratio = None
     if span_target_words and span_actual_words is not None and span_target_words > 0:
@@ -223,6 +230,9 @@ def make_sample_record(
         "cross_family_duplicate_flag": cross_family_duplicate_flag,
         "semantic_preservation": semantic_preservation,
         "semantic_preservation_notes": semantic_preservation_notes,
+        "automated_screen_similarity": automated_screen_similarity,
+        "automated_screen_fact_check": automated_screen_fact_check,
+        "automated_screen_label": automated_screen_label,
         "qc_status": qc_status,
         "qc_notes": qc_notes,
     }
@@ -458,6 +468,104 @@ def generate_sentence_transform(
         source_sample_id=f"{seed['id']}__human", text=spliced, ground_truth_confidence="high",
         modified_spans=modified_spans, generation_config=result.generation_config,
         prompt_template_id=f"{category}_v1", target_length_words=target_words,
+        qc_status=qc_status, qc_notes=notes,
+        intended_span_index=idx,
+        span_target_words=target_words,
+        span_actual_words=rewritten_words,
+        resegmentation_ok=resegmentation_ok,
+        instruction_leakage_flagged=flags["instruction_leakage"],
+        ai_self_reference_flagged=flags["ai_self_reference"],
+        semantic_preservation="not_yet_reviewed",
+    )
+
+
+def generate_sentence_transform_with_paragraph_context(
+    seed: dict,
+    split: str,
+    category: str,
+    instruction_template: str,
+    meta_instruction: str,
+    temperature: float,
+    top_p: float,
+    expected_length_ratio_range: tuple[float, float],
+) -> dict:
+    """Variant of generate_sentence_transform (EXP-DATA-001-R2, per DEC-011's
+    confirmation-round finding): gives the model the FULL PARAGRAPH
+    containing the target sentence as context, instead of just one
+    sentence before/after, while explicitly instructing it to modify only
+    the target sentence. The splice mechanism, ground-truth guarantee,
+    and QC (including the unconditional resegmentation hard-reject) are
+    otherwise identical to generate_sentence_transform -- only the amount
+    of context given to the model changes. `temperature`/`top_p` are
+    passed explicitly (not hardcoded per-category) so a caller can hold
+    them constant across light/moderate for a controlled comparison, per
+    the explicit experimental-control requirement."""
+    original_text = normalize_text(seed["full_text"])
+    doc = parse_document(original_text)
+    sentences = segment_sentences(original_text, doc=doc)
+    sentence_texts = [s.text for s in sentences]
+    paragraphs = original_text.split("\n\n")
+
+    idx = gu.pick_rewrite_sentence_index(sentence_texts, rng_seed=RNG_SEED)
+    if idx is None:
+        return make_sample_record(
+            sample_id=f"{seed['id']}__{category}",
+            family_id=seed["id"], split=split, label="ai_assisted", transformation_type=category,
+            source_sample_id=f"{seed['id']}__human", text=None, ground_truth_confidence="high", modified_spans=None,
+            generation_config=None, prompt_template_id=f"{category}_v2", target_length_words=None,
+            qc_status="skipped", qc_notes=["no_suitable_sentence_found"],
+        )
+
+    target = sentences[idx]
+
+    # Find which paragraph contains the target sentence, by character offset.
+    cursor = 0
+    containing_paragraph = paragraphs[0]
+    for p in paragraphs:
+        p_start, p_end = cursor, cursor + len(p)
+        if p_start <= target.start_char < p_end:
+            containing_paragraph = p
+            break
+        cursor = p_end + 2  # "\n\n" separator
+
+    instruction = instruction_template.format(paragraph=containing_paragraph, target=target.text)
+    target_words = len(target.text.split())
+
+    max_new_tokens = gu.budget_max_new_tokens(target_words + 5)
+    gen_seed = next_gen_seed()
+    result = qwen_generate.generate(instruction, max_new_tokens=max_new_tokens, temperature=temperature, top_p=top_p, seed=gen_seed)
+    rewritten = normalize_text(result.text).strip().strip('"')
+
+    spliced = original_text[: target.start_char] + rewritten + original_text[target.end_char :]
+
+    notes, flags = run_qc_common(meta_instruction, rewritten, min_words=2, max_words=max(80, target_words * 4))
+
+    rewritten_words = len(rewritten.split())
+    if target_words > 0 and rewritten:
+        ratio = rewritten_words / target_words
+        lo, hi = expected_length_ratio_range
+        if not (lo <= ratio <= hi):
+            notes.append(f"modification_scope_drift(ratio={ratio:.2f},expected=[{lo},{hi}])")
+
+    spliced_doc = parse_document(spliced)
+    spliced_sentences = segment_sentences(spliced, doc=spliced_doc) if spliced_doc is not None else []
+    resegmentation_ok = len(spliced_sentences) == len(sentences)
+    if not resegmentation_ok:
+        notes.append(f"splice_resegmentation_mismatch(orig={len(sentences)},spliced={len(spliced_sentences)})")
+
+    modified_spans = None
+    if resegmentation_ok:
+        new_span = spliced_sentences[idx]
+        modified_spans = [{"sentence_index": idx, "char_start": new_span.start_char, "char_end": new_span.end_char}]
+
+    qc_status = "rejected" if "splice_resegmentation_mismatch" in " ".join(notes) or "empty_output" in notes else ("flagged" if notes else "passed")
+
+    return make_sample_record(
+        sample_id=f"{seed['id']}__{category}",
+        family_id=seed["id"], split=split, label="ai_assisted", transformation_type=category,
+        source_sample_id=f"{seed['id']}__human", text=spliced, ground_truth_confidence="high",
+        modified_spans=modified_spans, generation_config=result.generation_config,
+        prompt_template_id=f"{category}_v2", target_length_words=target_words,
         qc_status=qc_status, qc_notes=notes,
         intended_span_index=idx,
         span_target_words=target_words,

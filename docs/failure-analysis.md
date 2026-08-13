@@ -11,11 +11,43 @@ mistaken for the other:
 
 ---
 
-## Part 1: Data Generation Pipeline Failures (EXP-DATA-001, 2026-08-10)
+## Part 1: Data Generation Pipeline Failures (EXP-DATA-001 through R3, 2026-08-10 to 2026-08-13)
 
 Preserved here per explicit instruction not to erase or minimize them.
 Full context: [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md),
-[DEC-011](decisions/DEC-011-mixed-text-generation.md).
+[reports/EXP-DATA-001-R1-confirmation.md](../reports/EXP-DATA-001-R1-confirmation.md),
+[reports/EXP-DATA-001-R2.md](../reports/EXP-DATA-001-R2.md),
+[reports/EXP-DATA-001-R3.md](../reports/EXP-DATA-001-R3.md),
+[DEC-011](decisions/DEC-011-mixed-text-generation.md),
+[DEC-012](decisions/DEC-012-semantic-preservation-screen.md),
+[DEC-013](decisions/DEC-013-claim-survival-screen.md).
+
+**The single most important finding across all of these experiments,
+stated plainly and preserved as permanent project history — see Failure
+4 for detail:**
+
+> **Structural QC can pass samples that nevertheless alter the author's
+> meaning.**
+
+This is not a one-off bug that got fixed and closed. It is a validated
+property of this generation pipeline that shaped its entire subsequent
+design (the semantic-preservation review protocol, DEC-012's automated
+screen, and the sentence/paragraph-separated evidence tracking in
+DEC-011) and must not be quietly forgotten or re-litigated by future work
+on it.
+
+**Where this evidence led, 2026-08-13**: the failures documented below
+(especially Failures 4, 7–8, 11–12) are the direct basis for the
+post-R3 strategic decision to include only `sentence_light_controlled_v2`
+in the primary dataset and exclude `sentence_moderate_controlled_v2` and
+both paragraph-level categories, and to reframe the automated screens as
+risk-triage tools rather than a safety gate. See
+[final-decision-guide.md](final-decision-guide.md) and
+[DEC-011](decisions/DEC-011-mixed-text-generation.md)'s "Strategic
+Decision" section. None of the failures below are superseded or
+invalidated by that decision — they are its evidentiary basis, and
+remain permanent project history regardless of which categories a future
+dataset revision includes.
 
 ### Failure 1: Whole-essay light/moderate polish does not produce reliable sentence-level ground truth
 
@@ -168,6 +200,206 @@ score.
 `SequenceMatcher` call sites; a regression test
 (`test_align_and_diff_sentences_does_not_understate_similarity_for_long_sentences`)
 added to `scripts/tests/test_generation_utils.py` to keep this caught.
+
+### Failure 7: paragraph-level rewrites can drop an entire claim while passing length-ratio QC
+
+**What was attempted:** validate that `paragraph_light_controlled`/
+`paragraph_moderate_controlled` (previously the more reliable of the two
+regimes) hold up on a fresh set of seeds
+(EXP-DATA-001-R2, [report](../reports/EXP-DATA-001-R2.md) §1).
+
+**What happened:** both the light and moderate rewrites of one seed
+(`DB12BA4206B8`) dropped the paragraph's entire opening claim/framing
+("Community service. It's what prisoners and volunteers do each and
+every day.") while otherwise reading as faithful paraphrases of the rest
+of the paragraph. Both passed structural QC (length ratio 1.05–1.07, well
+within bounds) because expanding wording elsewhere compensated for the
+dropped sentence's length.
+
+**Why it failed:** length-ratio QC checks the *aggregate* size of the
+rewritten span, not whether every claim in the original survived
+somewhere in the output. A rewrite can lose a whole sentence's worth of
+content and still land inside a length-ratio window if it's verbose
+elsewhere.
+
+**What changed as a result:** nothing implemented yet — recorded as
+concrete evidence that paragraph-level, despite being the more reliable
+regime overall, is **not yet ready for scale** (DEC-011's
+category-specific conclusion) and needs a claim-survival check (e.g.
+verifying major entities/claims from the original appear somewhere in
+the rewrite) before it can be.
+
+### Failure 8 (partially resolved, not eliminated): sentence-level `moderate` instruction wording drives most remaining semantic drift
+
+**What was attempted:** EXP-DATA-001-R2 redesigned the sentence-level
+mechanism (full-paragraph context instead of one sentence before/after)
+and, critically, held temperature/top_p **constant** between light and
+moderate for the first time — removing the confound present in
+EXP-DATA-001-R1-confirmation (which used temperature 0.5 for light, 0.7
+for moderate, making it impossible to attribute the difference between
+them to either cause).
+
+**What happened:** with the confound removed, `sentence_light_controlled_v2`
+reached 9/10 preserved and 0/10 changed (from 33%/47% before) — a large
+improvement. `sentence_moderate_controlled_v2` still showed 3/9 (33%)
+changed — a real, substantial improvement from before, but not resolved.
+Observed drift included a descriptive claim turned prescriptive, a
+complete topic substitution, and a causal/agent reversal (a complaint
+about who should do community service was flipped in direction).
+
+**Why it failed (as far as this evidence shows):** with context and
+temperature no longer differing between the two categories, the
+remaining difference points at the **instruction wording itself** —
+"moderately reword... for clarity and flow" appears to license more
+substantive rewriting than "lightly copy-edit," and that latitude is
+what produces drift.
+
+**What changed as a result:** DEC-011 now records
+`sentence_light_controlled_v2` as promising enough for a further, larger
+validation round on its own, while `sentence_moderate_controlled_v2`
+remains not ready, with the *next* fix now localized to instruction
+redesign specifically (not more context, not temperature) — not yet
+attempted.
+
+### Failure 9 (a correctly-diagnosed measurement bug, not a generation problem): paragraph-level screen input silently truncated when sentences merge
+
+**What was attempted:** while building the claim-survival screen
+(DEC-013) for paragraph-level rewrites, test the new sentence-coverage
+signal against `DB12BA4206B8` — the one real sample manually labeled
+`"changed"` for claim omission (Failure 7) — to see whether the signal
+would have caught it.
+
+**What happened:** the test initially appeared to succeed (a coverage
+drop was detected), but investigation found this was an artifact, not a
+real detection: `apply_automated_screen.py`'s `extract_span_pair`
+reconstructed the "rewritten" half of the comparison pair from
+`modified_spans` character offsets. When the rewrite merged two original
+sentences into one, the resegmented `modified_spans` range covered only
+part of the new paragraph, silently dropping the merged sentence's text
+from what the screen actually compared. Re-reading the *actual* rewrite
+text directly (not through this extraction) shows the claim in question
+("prisoners and volunteers...") reads as preserved, not dropped, in the
+text currently on disk — all four original sentences score 0.63–0.73
+against their best match once the extraction bug is fixed.
+
+**Why it matters beyond the immediate fix:** this same `extract_span_pair`
+function supplies DEC-012's automated screen's input for paragraph
+categories too — meaning some of EXP-DATA-001-R2's already-reported
+`automated_screen_*` values for paragraph samples may have been computed
+against truncated rewritten text. **Not retroactively recomputed** —
+per explicit instruction to preserve existing evidence, EXP-DATA-001-R2's
+sample file and report are frozen as-is; this caveat is recorded instead
+of silently "fixing" historical numbers. It also means the specific
+factual basis for `DB12BA4206B8`'s `"changed"` manual label (originally
+attributed to a dropped opening claim) is now in question — the record
+itself was not altered to investigate further, since doing so would mean
+editing frozen, preserved evidence.
+
+**What changed as a result:** `extract_span_pair` now reconstructs
+paragraph-level pairs by splitting both the original and rewritten essay
+text on the same paragraph index, instead of from `modified_spans`
+offsets — robust because splicing only changes characters within one
+paragraph, so paragraph boundaries elsewhere are unaffected by
+construction. Regression tests added
+(`scripts/tests/test_apply_automated_screen.py`). Applies going forward,
+starting with EXP-DATA-001-R3. See DEC-012's "Out-of-Sample Validation"
+section and DEC-013 for full detail.
+
+### Failure 10 (a correctly-caught edge case, not a bug): sentence segmenter can bundle a salutation into the first "sentence," and a rewrite can drop it
+
+**What was attempted:** EXP-DATA-001-R3's sentence-light larger
+confirmation (25 fresh seeds, `sentence_light_controlled_v2`, otherwise
+identical mechanism to EXP-DATA-001-R2).
+
+**What happened:** for seed `B71DB7CEB4A8`, the human essay opens `"Dear
+Principal,\n\nIn my opinion I say that Policy 1 is a whole better than
+Policy 2."` — because there is no terminating punctuation after "Dear
+Principal,", the sentence segmenter treats the salutation and the first
+real sentence as one combined "sentence." That combined span became the
+rewrite target; the model's light-edit rewrite of the opinion clause
+dropped the salutation entirely, shrinking the span enough to trip
+`modification_scope_drift` (length ratio 0.65, outside the [0.7, 1.3]
+window) — correctly flagged, not silently passed.
+
+**Why this is listed as a "failure" but not a bug:** same pattern as
+Failure 3 — the QC check did exactly what it exists to do. On manual
+review the underlying opinion claim itself was judged `preserved`; the
+salutation loss isn't a claim/fact/entity change by
+generation-methodology.md Section 12's protocol, but it is a real,
+disclosed side effect of a segmentation edge case interacting with the
+generation mechanism, worth being aware of at larger scale (letter-style
+essays with informal punctuation after a greeting are common in this
+corpus).
+
+**What changed as a result:** nothing implemented yet — recorded as a
+data point. If this recurs at scale, excluding a leading
+salutation-only fragment from the rewrite-target candidate pool would be
+a narrowly-scoped fix.
+
+### Failure 11: paragraph-level `moderate` rewrite lost track of the essay's first-person narrator identity
+
+**What was attempted:** EXP-DATA-001-R3's paragraph claim-survival
+validation (12 fresh seeds, unchanged paragraph mechanism).
+
+**What happened:** `80664125F8D0__paragraph_moderate_controlled` (a
+student's letter about sports-eligibility grade requirements, written
+first-person as "I currently hold a C in two classes... I enjoy
+soccer...") was rewritten starting **"As a teacher, I support..."** and
+continued **"I'm receiving a C in two of my classes, which means I won't
+be eligible to try out for the sports I wish to join"** — internally
+incoherent (a teacher would not be trying out for student sports). The
+model lost track of who the first-person narrator is mid-rewrite.
+
+**Why it failed:** not investigated further (single occurrence); a
+plausible contributor is that "moderate" instruction wording licenses
+more restructuring latitude, and restructuring a first-person student
+narrative under that latitude apparently allows the model to drift into
+a different, generic persona ("as a teacher") that doesn't fit the
+content that follows it.
+
+**What changed as a result:** nothing implemented yet. Notable
+downstream effect: this sample WAS flagged by both the DEC-012 and
+DEC-013 automated screens, but only because of an unrelated fact-check
+false positive on date phrasing in the same paragraph — neither screen
+actually detected the identity swap itself (see Failure 12 and
+DEC-012/DEC-013 for the broader pattern this round). Recorded as a data
+point for any future work on paragraph-level moderate rewriting.
+
+### Failure 12: the automated semantic screens' "0 changed mislabeled preserved" safety property broke for the first time
+
+**What was attempted:** validate DEC-012's automated semantic screen
+(previously 0/8 calibration, 0/5 EXP-DATA-001-R2 out-of-sample) and the
+new DEC-013 claim-survival screen against EXP-DATA-001-R3's fresh
+paragraph batch.
+
+**What happened:** 2 of 3 real `"changed"` paragraph samples this round
+were labeled `likely_preserved`/`no_omission_signal` by both screens —
+`1F8012FFBEBE__paragraph_light_controlled` (a stated-priority reversal:
+the rewrite says the opposite of what the original promised to
+prioritize) and `62AA2FDC41C6__paragraph_light_controlled` (a dropped
+claim merged with a location/mechanism flip inside one garbled
+sentence). Both score high embedding similarity and touch no number or
+named entity, so neither the fact-check nor the coverage signal had
+anything to catch.
+
+**Why it failed:** both screens fundamentally measure lexical/structural
+similarity (embeddings) or presence-of-a-counterpart (coverage) — neither
+has a mechanism for detecting that a structurally-similar, fluent
+sentence states the *opposite* meaning of the original, or that a merged
+sentence quietly drops one of two claims it's supposed to carry. This is
+precisely the gap DEC-012 flagged as theoretical when it was written
+("not observed in this calibration set, but not proven absent either")
+— now directly observed, three validation rounds later.
+
+**What changed as a result:** both DEC-012 and DEC-013 updated to state
+this plainly rather than continuing to claim a clean record; NLI/
+entailment (DEC-012's Alternative B, previously deferred) is now a live
+candidate for a future round, since it's specifically suited to
+detecting contradiction/reversal that these similarity-based signals
+cannot. **Not implemented in this round** — this is a finding to review,
+not a fix already made. The standing rule that human review is
+mandatory regardless of screen label — already in place — is now backed
+by a concrete failure case, not just a theoretical justification.
 
 ---
 

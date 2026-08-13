@@ -16,6 +16,11 @@ numpy>=1.26
 # virtualenv for a hackathon-scale project)
 kaggle>=1.6
 
+# Semantic-preservation screening signal (DEC-012, used by
+# scripts/semantic_screen.py) — a SCREEN only, never the detector or a
+# ground-truth judge; see DEC-004/DEC-012.
+sentence-transformers>=3.0
+
 # Testing
 pytest>=8.2
 httpx>=0.27

@@ -1,196 +1,229 @@
-# Dataset
+# Primary Dataset Construction Plan
 
-> Status: human corpus **acquired, live-verified, and inspected** (see
-> [project-status.md](project-status.md), Phase 5C, and the full
-> [dataset inspection report](../reports/dataset-inspection.md)). No
-> AI/mixed samples have been generated yet, and no train/validation/test
-> split exists yet — those remain Phase 5D+.
+**Status: DESIGN ONLY. Not executed.** Per explicit instruction, this
+document specifies how the first primary benchmark dataset will be
+built once authorized — no generation for this dataset has started.
+Everything below is a proposal for review, not a completed action.
 
-## Human-writing source(s) — Accepted
+See [final-decision-guide.md](final-decision-guide.md) for a one-page
+summary of what's in/out and why, and
+[DEC-011](decisions/DEC-011-mixed-text-generation.md)'s "Strategic
+Decision" section for the full reasoning this plan implements.
 
-Selected after comparing seven candidate sources against provenance,
-licensing, domain relevance, size, and privacy — full comparison in
-[dataset-source-comparison.md](dataset-source-comparison.md), decision
-recorded in
-[decisions/DEC-009-human-dataset-source.md](decisions/DEC-009-human-dataset-source.md)
-(**Accepted** as of 2026-08-10, after live license verification and file
-inspection — originally Provisional based on web research only):
+## 1. Included categories
 
-- **PERSUADE 2.0** — primary corpus for general reference distributions.
-  **Confirmed via the actual acquired file**
-  (`persuade_2.0_human_scores_demo_id_github.csv`): 25,996 essays
-  (25,992 unique IDs — 4 collide, see inspection report), grades 6–12,
-  15 prompts each with full instruction text, two task types
-  (`Independent` / `Text dependent`). **Live-verified license:
-  CC BY-NC-SA 4.0** — this resolves the discrepancy noted during the
-  research phase (Kaggle's authoritative metadata matches the GitHub
-  repo's framing, not the Learning Agency Lab site's "CC BY 4.0" framing).
-- **ELLIPSE Corpus** — used for the Phase 12 fairness analysis. Confirmed
-  via the actual file (`ELLIPSE_Final_github.csv`): 6,482 essays, 44
-  unique prompts (correcting the ~29 estimated from web research), seven
-  proficiency scores (Overall + six analytic sub-scores). **Live-verified
-  license: CC BY-NC-SA 4.0**, exactly as expected, no discrepancy. Note:
-  ELLIPSE is 100% English Language Learners by corpus design — see
-  "Refined fairness methodology" below.
+| Category | Label | Mechanism | Evidence basis |
+|---|---|---|---|
+| Human original | `human` | Unmodified PERSUADE 2.0 essay | N/A — ground truth by definition |
+| Fully AI-generated | `machine` | `full_ai` (whole-essay generation, same prompt/target length) | EXP-DATA-001: 10/10 QC-clean once the `check_instruction_leakage` false-positive bug is accounted for (the 3 flagged samples were confirmed false positives, not real leakage) |
+| Controlled sentence-light AI-assisted | `ai_assisted` | `sentence_light_controlled_v2` (surgical single-sentence splice, full-paragraph context, light-copy-edit instruction) | EXP-DATA-001-R2 (9/10 preserved, 0/10 changed) + EXP-DATA-001-R3 (22/25 preserved, 1/25 changed at 2.5x scale) — see DEC-011 |
 
-Full schema, statistics, data-quality findings, and per-corpus
-limitations: [reports/dataset-inspection.md](../reports/dataset-inspection.md).
-That report is the authoritative source for every number about these two
-corpora going forward — this document summarizes it, not the reverse.
+**Excluded from this dataset** (per DEC-011's Strategic Decision, not
+deleted or hidden — see §6 below and failure-analysis.md):
+`sentence_moderate_controlled_v2` ("insufficient semantic reliability
+for primary dataset construction"), `paragraph_light_controlled` /
+`paragraph_moderate_controlled` ("promising structural mechanism but
+insufficient semantic reliability for primary dataset construction").
 
-**Real data-quality issues found on inspection (documented, not
-disqualifying):** PERSUADE's corpus-provided `word_count` column
-disagrees with a direct recount for ~5% of rows (worst case: a 48x
-discrepancy) — our pipeline already recomputes word counts independently
-(Phase 3), so this doesn't block anything, but the column itself must
-never be trusted. 4 PERSUADE `essay_id_comp` values collide across
-different essays (a source-data bug, not duplicate content). Both
-corpora preserve paragraph boundaries via blank-line markers in ~95% of
-essays — resolving the open question from Phase 5B about whether
-paragraph-level mixed-sample transformations are feasible (they are, for
-the ~95% majority).
+## 2. Proposed size (adjustable pending review)
 
-**Refined fairness methodology:** ELLIPSE cannot supply a non-ELL
-comparison group by itself (100% ELL by design). The plan is now: (a) use
-ELLIPSE's *continuous* proficiency scores to test whether detector
-behavior correlates with proficiency level within the ELL population, and
-(b) use PERSUADE's own `ell_status` field (newly confirmed present:
-~2,244 "Yes" / ~22,451 "No") for a same-corpus ELL-vs-non-ELL comparison,
-rather than comparing across the two different corpora directly. Full
-reasoning in DEC-009's "Live Verification & Inspection Update" section.
+**150 fresh family (seed) essays** — a number chosen to balance three
+constraints, stated explicitly rather than picked arbitrarily:
 
-**Known domain mismatch, stated plainly:** both corpora are
-argumentative/proficiency-assessment student essays, not personal-
-narrative college admissions essays. No available, appropriately-licensed
-corpus of genuine admissions essays was found — the closest domain match
-(colleges' own published "Essays That Worked" examples) was rejected for
-licensing/consent reasons (see DEC-009). This mismatch will be stated
-again in `docs/evaluation.md` once real results exist, not minimized.
+1. **Pool availability**: PERSUADE 2.0's `Independent`-task subset has
+   4,177 essays in this project's eligible word-count range
+   (150–320 words). 80 have already been used across every prior
+   generation experiment (EXP-DATA-001 through R3) and must be excluded
+   from this pool — see §3 — leaving 4,097 available. 150 is a small
+   fraction of that (3.7%), leaving ample headroom for later dataset
+   revisions or a held-out generalization set without re-touching this
+   pool.
+2. **Generation throughput**: each family requires 2 generation calls
+   (`full_ai` + `sentence_light_controlled_v2`; `human` is free) on
+   Qwen2.5-1.5B-Instruct, CPU-bound. Observed throughput from
+   EXP-DATA-001-R2/R3 (comparable per-call cost) is roughly 1–2 minutes
+   per call. 150 families × 2 calls ≈ 300 calls ≈ 5–10 hours of
+   generation wall-clock time — a real, bounded cost, not
+   "thousands of samples."
+3. **Manual semantic-review capacity**: every `sentence_light_controlled_v2`
+   sample requires mandatory human semantic review (DEC-011's Strategic
+   Decision) by the single reviewer this pipeline currently has (see
+   §5, and the standing "one reviewer, no inter-rater reliability"
+   limitation). EXP-DATA-001-R3 reviewed 25 sentence-level samples in
+   one session; 150 is a 6x increase in review volume for this
+   category alone — large but tractable across a few sessions, not an
+   unreviewable firehose. `full_ai` samples do not require semantic
+   review (there is no "original" to preserve against — see §5).
 
-## Sensitive metadata handling
+150 is a **proposal**, not a constraint of the tooling — the same
+scripts support any N. If review determines a different size is more
+appropriate (smaller for a faster first pass, larger for a more
+statistically robust benchmark), only `N_SEEDS` and the exclusion set
+change.
 
-Both corpora include demographic columns (gender, race/ethnicity,
-economic status, disability status, grade). Per the requirement not to
-feed demographic metadata into the detector, the working ML dataset
-(once built) will carry forward only: essay text, prompt/task
-identifiers, and — kept in a separate evaluation-only table, never joined
-into the detector's feature vector — PERSUADE's `ell_status` and
-ELLIPSE's proficiency scores, since those are the only fields this
-project's actual fairness scope (Section 16: second-language writers)
-requires. Other demographic columns are recommended for exclusion
-entirely, not just non-use — full reasoning in the inspection report.
+### Expected output composition (based on observed rates, not guaranteed)
 
-## Machine data — designed, not generated
+| | Generated | Expected after QC + semantic review |
+|---|---|---|
+| `human` | 150 | 150 (no generation, no attrition) |
+| `full_ai` (`machine`) | 150 | ~150 (EXP-DATA-001 saw 0 real QC failures; some small attrition possible on fresh seeds, not assumed to be exactly 0) |
+| `sentence_light_controlled_v2` (`ai_assisted`) | 150 | **~132 (88%) enter the high-confidence dataset as `preserved`**; ~12 (8%) questionable and ~6 (4%) changed are set aside — see §7, not discarded |
 
-Full-essay machine generation targets the **same prompt and approximate
-length** as a paired human seed essay, specifically so the detector can't
-succeed by learning topic or length differences between human and machine
-text instead of writing-style differences. Model choice:
-[DEC-010](decisions/DEC-010-machine-generation-model.md)
-(Qwen2.5-1.5B-Instruct, Provisional — not yet downloaded or run). Full
-mechanism: [generation-methodology.md](generation-methodology.md),
-Section 3.
+**These are projections from EXP-DATA-001-R3's observed rates (88%/8%/4%
+on n=25), not promises.** The actual post-review counts will be
+reported honestly once the review is done, exactly as every prior round
+in this project has been reported — including if the rate differs from
+this projection, the same way EXP-DATA-001-R3's paragraph batch showed
+real, disclosed variance from EXP-DATA-001-R2's.
 
-## Mixed / AI-assisted data — designed, not generated
+## 3. Family construction
 
-Eight transformation categories (light/moderate polish, single/multi
-sentence rewrite, single/multi paragraph rewrite, heavy revision), each
-derived from a human seed essay. The mechanism differs by category —
-exact surgical splicing for the sentence/paragraph-rewrite categories,
-whole-essay-instruction-plus-diff for the polish/heavy-revision
-categories — chosen per category to match what's actually being
-simulated. Full design and reasoning:
-[DEC-011](decisions/DEC-011-mixed-text-generation.md) and
-[generation-methodology.md](generation-methodology.md), Section 4.
+Unchanged from the methodology already validated across five prior
+experiments (generation-methodology.md §1, DEC-011): each human seed
+essay `S` is one **family**. Every sample derived from `S` —
+`S` itself, `S.full_ai`, `S.sentence_light_controlled_v2` — shares
+`family_id = S.id`.
 
-## Generation methodology
+**Seed pool**: `load_candidate_records()` filtered to `task ==
+"Independent"`, word count in `[150, 320]`, minus the 80 seed IDs
+already used across EXP-DATA-001 / R1 / R1-confirmation / R2-paragraph /
+R2-sentence / R3-sentence-light / R3-paragraph-claim-survival (exact ID
+list maintained the same way as every prior round's `EXCLUDED_SEED_IDS`
+— hardcoded, asserted, never silently recomputed). This keeps the
+primary dataset's essays disjoint from every essay this project's
+methodology decisions were validated against, avoiding any risk that
+the dataset is subtly shaped by which essays were repeatedly
+hand-reviewed during methodology development.
 
-See [generation-methodology.md](generation-methodology.md) for the
-complete walkthrough: family/pairing design, prompt sourcing (extracted
-from the acquired corpus's own metadata, not hand-authored categories —
-Section 2 there explains why), length matching, diversity strategy, and
-quality control.
+`select_seed_essays()` (existing, unchanged) applies the same
+`min_sentences=5, min_paragraphs=2` filters used throughout, so every
+seed is structurally eligible for both `full_ai`'s length-matching and
+`sentence_light_controlled_v2`'s span-selection.
 
-## Ground-truth construction
+## 4. Split assignment (leakage-safe, family-level)
 
-Ground truth is **never** produced by running the detector on generated
-text — it comes entirely from the known generation process (which
-sentences were surgically replaced, or which were diffed as changed).
-Each sample records a `ground_truth_confidence` of `high` (full
-generation or surgical splice), `approximate` (diff-based polish
-categories), or `essay_level_only` (heavy revision, where sentence-level
-localization isn't meaningful). See generation-methodology.md Section 9
-for the full metadata schema.
+Unchanged hard invariant (DEC-011 §"Leakage invariant", already
+enforced and tested throughout): **split assignment happens at the
+family level, before any generation** — `assign_family_splits()`
+(existing, default ratios 70/15/15) assigns each of the 150 seed IDs to
+train/validation/test **first**; every sample later derived from a seed
+inherits that seed's split. A seed essay and all its derived samples
+(human original, full_ai, sentence-light) always land in the same
+split — never split across train and test.
 
-## Sentence-level provenance
+Proposed ratios: **70% train / 15% validation / 15% test** at the
+family level (105 / ~22 / ~23 families) — the existing default, used
+without modification since no evidence from this project's experiments
+suggests a different ratio is needed at this stage. Revisit if Phase 6
+(scoring/calibration) or Phase 10 (evaluation) surfaces a specific need
+for a different split shape (e.g. a larger held-out test set for a
+generalization claim).
 
-Every mixed sample's `modified_spans` field records exactly which
-sentence(s)/character range(s) are AI-authored, preserved through to
-final storage — this is what makes sentence-level detector evaluation
-possible later (Phase 10): e.g. checking whether the detector correctly
-flags sentences 2–3 of a 4-sentence essay when that's exactly what was
-AI-rewritten, not just whether it flagged the essay as "mixed" overall.
+## 5. Semantic-review protocol (mandatory, not sampled)
 
-## Leakage prevention
+Per DEC-011's Strategic Decision and the review's explicit instruction
+("human review is the final label authority"):
 
-**Hard invariant:** every sample derived from one human seed essay (the
-original plus all 8 transformations of it) shares one `family_id` and
-must be assigned to the same train/validation/test split. Split
-assignment happens at the family level *before* generation runs, not
-after — see [DEC-011](decisions/DEC-011-mixed-text-generation.md) for why
-this ordering specifically matters (generating first and splitting after
-is the exact bug this prevents).
+```
+Automated screening (DEC-012)
+        |
+        v
+risk triage (prioritizes review order, does not decide)
+        |
+        v
+human semantic review (generation-methodology.md Section 12 protocol)
+        |
+        v
+final ground truth (semantic_preservation field)
+```
 
-## Quality control
+- **`sentence_light_controlled_v2`**: **every** generated sample gets
+  full manual review against the documented drift protocol (numbers,
+  entities, causal relationships, position, claims added/removed,
+  severity/degree, agent, specific-experience swaps = drift; style or
+  grammar alone = not drift) — not a sample, not a subset triaged by
+  the automated screen. The DEC-012 screen's `automated_screen_label`
+  is still computed and stored (useful for prioritizing review order and
+  as a documented data point), but it never substitutes for review, and
+  a `likely_preserved` label does not exempt a sample from review. This
+  is a direct, deliberate response to EXP-DATA-001-R3's finding that the
+  screen can miss real drift (2/3 changed paragraph samples this round)
+  — the same risk applies in principle to sentence-level samples even
+  though it wasn't observed there this round.
+- **`full_ai`**: no semantic-preservation review — there is no "original
+  span" a full generation is supposed to preserve. Structural QC
+  (`check_instruction_leakage`, `check_ai_self_reference`, length
+  budget, near-duplicate scoping) is the complete quality gate for this
+  category, consistent with EXP-DATA-001's validated treatment of it.
+- **`human`**: no review needed — unmodified source text.
 
-Every generated/transformed sample is checked for generation failures
-(empty output, out-of-bounds length, prompt leakage, excessive
-repetition, leftover instruction artifacts, failed sentence-count
-alignment for diff-based categories, exact/near duplicates) before being
-accepted. Rejections are logged with a reason, never silently discarded —
-full list in generation-methodology.md Section 8. These checks catch
-*generation failures*, not "hard to classify" cases — genuinely ambiguous
-but well-formed samples are kept, since real mixed writing is often
-ambiguous and filtering that out would make the dataset less realistic,
-not more.
+Only samples with `semantic_preservation == "preserved"` enter the
+high-confidence primary dataset in the `ai_assisted` category. This is
+stated as a hard rule, not a guideline: **`"questionable"` and
+`"changed"` samples are excluded from the primary dataset's positive
+ground truth, full stop** — see §7.
 
-## Known limitations (dataset design, current)
+## 6. Deduplication
 
-- **Domain mismatch** (stated above): PERSUADE/ELLIPSE are argumentative/
-  proficiency-assessment essays, not personal-narrative admissions
-  writing. Machine and mixed samples inherit this same domain, since they
-  're generated on the same prompts.
-- **Single generation model**: all machine/mixed samples in the initial
-  dataset come from one small local model
-  ([DEC-010](decisions/DEC-010-machine-generation-model.md)). A detector
-  that performs well against this model's output has not been shown to
-  generalize to text produced by other/larger models (e.g. what students
-  realistically have access to). A held-out slice generated by a
-  different, never-used-in-training model is a documented future
-  consideration (DEC-010, "Revisit When"), not yet implemented.
-- **Approximate ground truth for polish/heavy-revision categories**: the
-  diff-based similarity threshold isn't numerically fixed yet — it's
-  deferred to real pilot examples (EXP-DATA-001), not guessed.
-- **Paragraph-boundary survival — now verified, resolved.** Both corpora
-  preserve blank-line paragraph markers in ~95% of essays (see inspection
-  report); the paragraph-rewrite categories are feasible for that
-  majority, with the remaining single-block essays excluded from that
-  category rather than given an invented paragraph split.
-- **Machine/mixed generation itself has not been executed.** This section
-  describes a design intended for a pilot (EXP-DATA-001, not yet run),
-  not a claim about generated samples existing.
+Reuses `near_duplicate_pairs_scoped()` (existing, family-aware,
+validated across every prior round — 0 cross-family false positives to
+date): run across the full generated batch after generation, separating
+`cross_family` (a real anomaly — two different seed essays producing
+suspiciously similar output, would need investigation before inclusion)
+from `same_family` (expected and informational — a sample is naturally
+similar to its own human original by construction, never treated as
+suspicious).
 
-## Explicit constraint
+## 7. Rejected/questionable-sample handling
 
-Raw datasets are not committed to this repository (Section 12: "Do not
-commit huge datasets into Git") — confirmed in practice: `data/raw/`
-(852MB + 15MB of acquired files) is gitignored and was never staged. This
-repository instead contains:
+Per explicit instruction, **nothing generated is discarded**. Proposed
+structure:
 
-- `scripts/` — reproducible acquisition/inspection scripts
-  (`acquire_dataset.py`, `inspect_corpus.py`), plus generation scripts to
-  come (Phase 5D+)
-- `data/` — gitignored working directory populated by those scripts
-- `reports/dataset-inspection.md` — real numbers from the actual acquired
-  files
-- This document — summarizing the above, updated to match
+- `data/generated/PRIMARY-DATASET-v1/samples.jsonl` — the full, raw
+  output of generation (all categories, all QC/review outcomes),
+  exactly like every prior experiment's `samples.jsonl`. This is the
+  single source of truth; nothing is deleted from it.
+- `data/generated/PRIMARY-DATASET-v1/included_ids.json` (or equivalent
+  manifest) — the exact `sample_id`s that meet the inclusion bar
+  (`human` + `machine` that passed QC + `ai_assisted` judged
+  `preserved`) — this is what a detector-training script would actually
+  load as ground truth, computed as a filter over the full samples file,
+  not a separate hand-copied dataset that can drift out of sync.
+- **Rejected/questionable samples remain in the same `samples.jsonl`**,
+  fully tagged with their `semantic_preservation`, `qc_status`,
+  `automated_screen_*`, and `claim_survival_*` fields intact — available
+  for failure analysis (extending `failure-analysis.md`'s existing
+  pattern) and for a possible future "hard negative" or "known-ambiguous"
+  evaluation set, but **never loaded as positive high-confidence
+  ground truth** by the manifest above.
+
+## 8. Train/validation/test separation — what this guarantees
+
+Because split assignment happens at the family level before generation
+(§4), and every derived sample inherits its seed's split:
+
+- No seed essay's `human`, `full_ai`, or `sentence_light_controlled_v2`
+  sample can appear in more than one split.
+- A detector trained on `train` and evaluated on `test` never sees any
+  text derived from a `test`-split essay during training, at any
+  transformation level — the leakage invariant DEC-011 established and
+  every prior experiment has verified programmatically (0 violations to
+  date) continues to apply unchanged.
+
+## 9. What this plan does not decide
+
+Explicitly out of scope for this document, per the instruction to design
+only what's needed to move to dataset construction, not further:
+
+- Detector architecture, features, or training procedure (Phase 6+).
+- Whether/how to incorporate ELLIPSE (fairness corpus, DEC-009) into
+  this specific primary dataset vs. a separate fairness-evaluation set —
+  not addressed here, deferred.
+- Whether a future dataset revision adds `sentence_moderate_controlled_v2`
+  or paragraph-level categories once their reliability issues are
+  addressed (DEC-011's redesign candidates, DEC-012's NLI candidate) —
+  those remain future work, not part of this plan.
+- The exact 150 seed IDs and their split assignment — these are
+  computed deterministically by the existing scripts once N and the
+  RNG seed are fixed, not hand-picked, and are not generated until
+  explicitly authorized.

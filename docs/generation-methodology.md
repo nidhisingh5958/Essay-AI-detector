@@ -1,30 +1,65 @@
 # Machine & Mixed Text Generation Methodology
 
-> Status: **Pilot-tested, redesigned, and confirmed at scale
-> (EXP-DATA-001 → EXP-DATA-001-R1 → EXP-DATA-001-R1-confirmation,
-> 2026-08-10).** EXP-DATA-001 (60 samples) found the whole-essay-
-> instruction-plus-diff mechanism for light/moderate polish did not
-> reliably produce sentence-level ground truth (70% structural drift —
-> [report](../reports/EXP-DATA-001.md)). Redesigned: whole-essay polish
-> is now Regime C (essay-level-only, never sentence metrics), and a
-> controlled-span mechanism produces sentence-level light/moderate
-> examples via the same surgical-splice guarantee as the original
-> rewrite categories. EXP-DATA-001-R1 (n=3,
-> [report](../reports/EXP-DATA-001-R1.md)) found this promising.
-> **EXP-DATA-001-R1-confirmation (n=10, 50 records,
-> [report](../reports/EXP-DATA-001-R1-confirmation.md)) found a
-> category-specific split**: paragraph-level controlled transformation is
-> close to validated (19/20 QC-passed, 18/20 meaning-preserved);
-> sentence-level is **not** — manual semantic review found 47% of
-> reviewed sentence-level samples changed the essay's actual meaning,
-> including 4 that passed every automated check. Structural QC alone
-> (length ratio + resegmentation) does not catch this. The document below
-> reflects the current methodology and states this split plainly rather
-> than treating "controlled-span" as one validated mechanism. Related
-> decisions: [DEC-010](decisions/DEC-010-machine-generation-model.md)
-> (generation model), [DEC-011](decisions/DEC-011-mixed-text-generation.md)
-> (mixed-sample mechanism, including the full redesign and confirmation
-> rationale).
+> Status: **Pilot-tested, redesigned, confirmed, and further validated
+> with a semantic-preservation gate (EXP-DATA-001 → R1 → R1-confirmation
+> → R2 → R3, 2026-08-10 to 2026-08-13).** EXP-DATA-001 found whole-essay-diff
+> polish unreliable for sentence-level ground truth (70% structural drift
+> — [report](../reports/EXP-DATA-001.md)). Redesigned into three regimes
+> (§4). EXP-DATA-001-R1-confirmation (n=10, 50 records,
+> [report](../reports/EXP-DATA-001-R1-confirmation.md)) found **structural
+> QC alone does not catch semantic drift** — 4 sentence-level samples
+> passed every automated check while changing the essay's meaning. This
+> is now permanent project history (see
+> [failure-analysis.md](failure-analysis.md)) and the reason Section 12
+> (semantic-preservation protocol) and
+> [DEC-012](decisions/DEC-012-semantic-preservation-screen.md) (automated
+> screening signal) exist. **EXP-DATA-001-R2** (2026-08-13,
+> [report](../reports/EXP-DATA-001-R2.md)) tested a redesigned
+> sentence-level mechanism (full-paragraph context + controlled
+> temperature) against fresh seeds, alongside a separate paragraph-level
+> re-validation: sentence-level semantic preservation improved sharply
+> (33%→79%), with `light` reaching 9/10 preserved / 0/10 changed while
+> `moderate` still shows real drift (3/9 changed) — now attributable to
+> the instruction wording itself, not a confound, since temperature was
+> held constant this round. Paragraph-level remains promising but not
+> ready (a new claim-omission failure mode was found on fresh seeds).
+> **EXP-DATA-001-R3** (2026-08-13,
+> [report](../reports/EXP-DATA-001-R3.md)) confirmed `sentence_light_
+> controlled_v2` at 2.5x the sample size (25 fresh seeds: 88% preserved,
+> 4% changed — a caught numeric substitution) and added a paragraph-level
+> claim-survival screening layer ([DEC-013](decisions/DEC-013-claim-survival-screen.md)),
+> validated on 12 fresh paragraph seeds: it caught one real claim-drop
+> correctly, but **2 of 3 real "changed" paragraph samples this round —
+> meaning reversals and a claim-drop-merged-with-a-flip — were missed by
+> BOTH the DEC-012 and DEC-013 automated screens**, the first time this
+> project's "0 changed mislabeled preserved" safety property has broken.
+> Paragraph-level is not ready for scale, and the evidence for that
+> conclusion got stronger this round, not weaker. Sentence-moderate was
+> NOT re-run this round (redesign-only per instruction; three candidate
+> instructions drafted, not tested — see
+> `scripts/sentence_moderate_redesign_candidates.py`). The document below
+> reflects the current methodology; no sub-mechanism here is declared
+> production-ready. Related decisions:
+> [DEC-010](decisions/DEC-010-machine-generation-model.md) (generation
+> model), [DEC-011](decisions/DEC-011-mixed-text-generation.md)
+> (mixed-sample mechanism, full redesign/confirmation/R2/R3 rationale),
+> [DEC-012](decisions/DEC-012-semantic-preservation-screen.md) (automated
+> semantic screen), [DEC-013](decisions/DEC-013-claim-survival-screen.md)
+> (claim-survival screen).
+>
+> **Post-R3 strategic decision (2026-08-13): this methodology phase has
+> concluded with a category-specific decision for primary dataset
+> construction**, not a uniform verdict. `sentence_light_controlled_v2`
+> is **approved for controlled dataset construction with mandatory
+> semantic review**; `sentence_moderate_controlled_v2` and both
+> paragraph-level categories are **excluded from the primary dataset**
+> (insufficient semantic reliability), though fully preserved as
+> methodology evidence. The automated screens (DEC-012, DEC-013) are
+> reframed as **risk-triage tools, not a semantic safety gate** — they
+> never override mandatory human review. See
+> [final-decision-guide.md](final-decision-guide.md) for the one-page
+> summary and [dataset.md](dataset.md) for the (not-yet-executed) primary
+> dataset construction plan this methodology work now feeds into.
 
 ## 1. The core idea: families, not independent samples
 
@@ -136,14 +171,23 @@ ground-truth regimes:
    later see are the same kind the generation pipeline used.
 2. Select target sentence(s)/paragraph(s) (word-count-filtered to avoid
    degenerate single-token "sentences").
-3. Send only the target span plus one sentence of surrounding context on
-   each side, with an instruction to transform just that span, preserving
-   meaning and matching tone/context. **Instruction *intensity* (full
-   rewrite vs. light copy-edit vs. moderate reword) is a parameter of
-   this one mechanism** — `sentence_rewrite_single` and
+3. Send the target span plus surrounding context, with an instruction to
+   transform just that span, preserving meaning and matching tone/
+   context. **Instruction *intensity* (full rewrite vs. light copy-edit
+   vs. moderate reword) is a parameter of this one mechanism** —
+   `sentence_rewrite_single` and
    `sentence_light_controlled`/`sentence_moderate_controlled` differ only
    in which instruction wording is sent, not in how ground truth is
-   produced.
+   produced. **How much context** is itself a variable, not fixed: the
+   original design sends one sentence before/after
+   (`generate_sentence_transform`); a **v2 variant**
+   (`generate_sentence_transform_with_paragraph_context`, added for
+   EXP-DATA-001-R2) sends the *full paragraph* containing the target
+   sentence instead, explicitly instructing the model to modify only the
+   target sentence. R2 found this improved both structural QC pass rates
+   and semantic preservation substantially (see Section 11) — the target
+   span and its splice offsets are unaffected either way, only what the
+   model sees before generating changes.
 4. Splice the result back into `S` at the exact original character
    offsets.
 5. Record the exact sentence-index range replaced as `modified_spans`.
@@ -449,6 +493,102 @@ understated similarity for text over ~200 characters) and added
 family-aware near-duplicate detection. Full results:
 [reports/EXP-DATA-001-R1-confirmation.md](../reports/EXP-DATA-001-R1-confirmation.md).
 
-All three are **data-generation validation experiments**, not
+**EXP-DATA-001-R2** (2026-08-13, 60 records across two separate
+experiments — see [reports/EXP-DATA-001-R2.md](../reports/EXP-DATA-001-R2.md)):
+
+- *Paragraph-level re-validation* (10 fresh seeds, unchanged mechanism):
+  9/10 QC-passed each category; semantic preservation 72% (13/18
+  reviewed) — lower than the confirmation round's 90% on this fresh
+  sample, and a new claim-omission failure mode found (a paragraph
+  rewrite can drop an entire sub-claim while otherwise reading as
+  faithful, undetected by length-ratio QC).
+- *Sentence-level redesign validation* (10 different fresh seeds, full-
+  paragraph context instead of adjacent-sentence context, temperature/
+  top_p held constant between light and moderate): semantic preservation
+  jumped to 79% combined (from 33%) — `sentence_light_controlled_v2`
+  reached 9/10 preserved / 0/10 changed; `sentence_moderate_controlled_v2`
+  still showed 3/9 (33%) changed, now attributable to the instruction
+  wording itself rather than the temperature confound present in the
+  prior round.
+- Also introduced and calibrated the DEC-012 automated semantic screen
+  (embedding similarity + entity/number check) against real reviewed
+  data; validated out-of-sample this round: 0/5 `"changed"` samples
+  mislabeled `likely_preserved`, with a known, documented gap on
+  `"questionable"`-tier drift.
+
+**EXP-DATA-001-R3** (2026-08-13, two separate experiments — see
+[reports/EXP-DATA-001-R3.md](../reports/EXP-DATA-001-R3.md)):
+
+- *Sentence-light larger confirmation* (25 fresh seeds,
+  `sentence_light_controlled_v2` ONLY — everything else held identical to
+  EXP-DATA-001-R2): 23/25 QC-passed cleanly; **22/25 (88%) preserved,
+  2/25 (8%) questionable, 1/25 (4%) changed**. The one `"changed"` sample
+  is a numeric substitution ("70 or above" → "80 or above"), correctly
+  caught by the DEC-012 screen. Confirms the promising EXP-DATA-001-R2
+  result holds at ~2.5x the sample size.
+- *Paragraph claim-survival validation* (12 fresh seeds, unchanged
+  generation mechanism, new DEC-013 screening layer): light 9/12
+  preserved / 2/12 changed / 1/12 questionable; moderate 8/12 preserved /
+  1/12 changed / 3/12 questionable. **2 of 3 `"changed"` samples this
+  round — a stated-priority reversal and a claim-drop-merged-with-a-
+  location-flip — were missed by BOTH the DEC-012 and DEC-013 automated
+  screens** (neither touches a number/entity or drops a whole sentence
+  cleanly enough for either signal to catch). First time this project's
+  "0 changed mislabeled preserved" safety property has broken. A real
+  extraction bug (`extract_span_pair` mis-splitting a rewritten paragraph
+  when the model's own output contained a blank-line break) was found
+  and fixed mid-round — see DEC-012's "Known Issue" note.
+- Sentence-moderate was explicitly NOT re-run this round (redesign-only
+  per instruction) — three candidate replacement instructions drafted in
+  `scripts/sentence_moderate_redesign_candidates.py`, not yet tested.
+
+All five are **data-generation validation experiments**, not
 detector-performance evaluations — no classification or accuracy claim
 is made from any of them.
+
+## 12. Semantic-preservation review protocol
+
+**Core finding this protocol exists to act on: structural validity does
+not imply semantic preservation.** Length checks, resegmentation checks,
+and character-level similarity (`difflib`) are all *structural/diagnostic
+measurements* — they can confirm a span is the right size and sits in a
+valid sentence boundary, but none of them read the text for meaning.
+EXP-DATA-001-R1-confirmation found 4 samples that passed every structural
+check while a manual reviewer found the meaning had changed. This
+finding is preserved as project history in
+[failure-analysis.md](failure-analysis.md) and must not be re-litigated
+or quietly forgotten by future work.
+
+**This is semantic drift** (a rewrite should be judged `"changed"` if it
+does any of the following relative to the original span):
+- Changing a numerical fact (a count, date, percentage, amount).
+- Changing a name or entity (who/what/where is being discussed).
+- Changing a causal relationship (why something happens, what leads to
+  what).
+- Changing the author's stated position (for/against, agree/disagree).
+- Introducing a claim that wasn't in the original, or removing one that
+  was.
+- Changing severity or degree (e.g. "some students" → "most students";
+  "may cause problems" → "will cause disaster").
+- Changing who performed an action (subject/agent swapped).
+- Replacing a specific example or experience with a different one.
+
+**This is NOT semantic drift** — do not flag it:
+- A stylistic change alone (word choice, sentence rhythm, formality)
+  that leaves the claim intact.
+- A grammatical correction that preserves meaning (fixing subject-verb
+  agreement, punctuation, spelling).
+
+**Borderline cases** (use `"questionable"`, not a forced binary choice):
+condensation that drops a supporting detail but keeps the main claim;
+added descriptive embellishment that doesn't contradict anything stated
+(e.g. "ran fast" → "pushed herself to her absolute limit" — invents
+intensity not literally stated, but doesn't change what happened).
+
+**Review process, current state:** manual review by a human reader,
+following the categories above, with a written reason recorded per
+sample (`semantic_preservation_notes`) — not a bare label. An automated
+*screening* signal exists ([DEC-012](decisions/DEC-012-semantic-preservation-screen.md))
+to prioritize which samples most need review, but it never sets the
+final label itself, and a `likely_preserved` screen result is not a
+substitute for review — it only affects triage priority.

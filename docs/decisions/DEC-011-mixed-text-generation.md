@@ -1,6 +1,68 @@
 # DEC-011 — Mixed/AI-Assisted Text Generation Methodology
 
 ## Status
+**Provisional — still Provisional as of 2026-08-13, with a
+category-specific STRATEGIC DECISION now made for primary dataset
+construction — see "Strategic Decision (2026-08-13, Post-R3 Review)"
+immediately below for the current, authoritative state.** The rest of
+this Status section (through "EXP-DATA-001-R3 update") is kept in
+chronological order as a history of how that decision was reached; skip
+to the Strategic Decision section for the current answer.
+
+## Strategic Decision (2026-08-13, Post-R3 Review)
+
+With EXP-DATA-001 through R3 as evidence, a category-specific decision
+for **primary dataset construction** has now been made (this is a
+narrower, more concrete decision than "is the methodology ready" — it's
+"what goes in the first benchmark dataset, specifically"). Full
+composition/protocol design: [docs/dataset.md](../dataset.md). Full
+list of what's approved/excluded and why, for quick reference:
+[docs/final-decision-guide.md](../final-decision-guide.md).
+
+- **`sentence_light_controlled_v2` — APPROVED for controlled dataset
+  construction, with mandatory semantic review.** Evidence: 25 fresh
+  seeds (EXP-DATA-001-R3), same configuration as R2, 22/25 preserved,
+  2/25 questionable, 1/25 changed (a numeric substitution correctly
+  caught by the DEC-012 screen) — the result reproduced at 2.5x R2's
+  scale. **This is not a claim the mechanism is perfectly safe.** The
+  automated screen is a triage tool, not ground truth (see DEC-012's
+  redefinition below) — every sample entering the primary dataset must
+  independently pass the documented semantic-review protocol
+  (generation-methodology.md §12); samples judged `questionable` or
+  `changed` are excluded from the high-confidence dataset regardless of
+  what the automated screen says.
+- **`sentence_moderate_controlled_v2` — EXCLUDED from the primary
+  dataset.** Status: **"Insufficient semantic reliability for primary
+  dataset construction."** 33% changed rate at the last tested scale
+  (EXP-DATA-001-R2), not re-tested in R3 by design. Three redesign
+  candidates (M1/M2/M3, `scripts/sentence_moderate_redesign_candidates.py`)
+  remain documented for future work but are not being pursued as part of
+  this dataset construction effort. May be revisited as future work, not
+  discarded.
+- **`paragraph_light_controlled` / `paragraph_moderate_controlled` —
+  EXCLUDED from the primary dataset.** Status: **"Promising structural
+  mechanism but insufficient semantic reliability for primary dataset
+  construction."** The surgical-splice mechanism itself works
+  (structural QC passes cleanly, exact ground truth by construction);
+  the semantic-reliability evidence does not clear the bar this round —
+  EXP-DATA-001-R3 found meaning-reversal and claim-drop failure types at
+  the paragraph level that neither current automated screen can catch,
+  which is a stronger reason for caution than the raw preservation
+  percentage alone. Their experiments, samples, and failure findings
+  remain fully preserved and documented — nothing about this exclusion
+  deletes or hides that evidence.
+- **`full_ai`** — included in the primary dataset design (Category B,
+  docs/dataset.md) on the strength of its EXP-DATA-001 validation; not
+  re-exercised with the fixed `check_instruction_leakage` in any run
+  since that fix (a standing, tracked open item — see "Revisit When"
+  item 8).
+
+This decision is about **what enters the first primary benchmark**, not
+a final verdict on any excluded category's long-term usefulness —
+`sentence_moderate_controlled_v2` and paragraph-level transformations
+remain valid subjects for future methodology work, just not part of this
+dataset.
+
 Provisional — **partially invalidated by EXP-DATA-001 pilot evidence**
 (2026-08-10), **redesigned** the same day (see "Post-Pilot Methodology
 Redesign" below), redesign **targeted-validated by EXP-DATA-001-R1**
@@ -82,7 +144,195 @@ context per edit, before being trusted at scale. Paragraph-level can
 reasonably proceed to a larger validation round on its own.
 
 ## Date
-2026-08-10
+2026-08-10 (updated 2026-08-13 with EXP-DATA-001-R2 evidence)
+
+## Category-Specific Conclusions (2026-08-13, EXP-DATA-001-R2)
+
+**Stated separately, deliberately not combined into one overall pass/
+fail judgment — the evidence does not support a single verdict for
+"controlled-span generation."**
+
+### Paragraph-level controlled transformation
+
+**Promising — proceed to further validation. Not ready for scale.**
+
+Fresh-seed re-validation (10 new seeds, unchanged mechanism): 9/10 QC
+passed each category, 0 cross-family duplicates, 0 leakage. Semantic
+preservation on this fresh batch: 72% preserved (13/18), down from the
+confirmation round's 90% — real variance across seed essays, not a
+mechanism regression. **New failure mode found**: two samples (same
+seed) dropped a paragraph's entire opening claim while otherwise reading
+as faithful paraphrases — structural QC (length ratio) did not catch
+this, since dropping one claim while expanding elsewhere still lands
+inside the length-ratio bounds. This needs a targeted check (e.g.
+verifying major entities/claims from the original survive somewhere in
+the rewrite) before paragraph-level is considered ready. Full results:
+[reports/EXP-DATA-001-R2.md](../../reports/EXP-DATA-001-R2.md) §1, §9.
+
+### Sentence-level controlled transformation
+
+**Semantic-preservation problem substantially reduced by the context +
+control redesign, but NOT resolved — and now split by sub-category.**
+
+With paragraph context (instead of one sentence before/after) and
+temperature/top_p held constant between light and moderate (closing the
+prior round's confound): `sentence_light_controlled_v2` reached 9/10
+preserved, 0/10 changed — a large improvement, promising enough to
+warrant a further, larger validation round on its own.
+`sentence_moderate_controlled_v2` reached only 6/9 preserved, 3/9 (33%)
+changed — **still not ready**, and with the temperature confound now
+removed, the evidence points at the `moderate` instruction wording
+itself (not temperature, not lack of context) as the primary remaining
+driver of drift. Full results:
+[reports/EXP-DATA-001-R2.md](../../reports/EXP-DATA-001-R2.md) §2, §10.
+
+### EXP-DATA-001-R3 update (2026-08-13) — larger sentence-light confirmation + paragraph claim-survival validation
+
+Per review: freeze EXP-DATA-001/R1/R2 as-is (not touched), run ONLY (a)
+a larger sentence-light confirmation on fresh seeds and (b) a paragraph
+claim-survival validation with a new screening layer (DEC-013). Both
+kept strictly separate, both reported separately, sentence-moderate NOT
+re-run (redesign only, see above).
+
+**Sentence-light (`sentence_light_controlled_v2`), 25 fresh seeds, same
+model/revision/temperature 0.6/top_p 0.95/context format/span-selection/
+QC/screen as EXP-DATA-001-R2 — only sample size and seed pool changed:**
+23/25 QC-passed cleanly (2 flagged by `modification_scope_drift`, both
+later judged `preserved` on manual review — one is a genuine, disclosed
+segmentation-interaction artifact, see failure-analysis.md Failure 10).
+**22/25 (88%) preserved, 2/25 (8%) questionable, 1/25 (4%) changed.**
+The one `"changed"` sample is a numeric substitution ("70 or above" →
+"80 or above") — same failure class as the original "one C"/"two Cs"
+case — and was correctly caught by the DEC-012 screen (`needs_review`,
+fact-check flagged the number mismatch). **This confirms the promising
+result from EXP-DATA-001-R2 (9/10 preserved, 0/10 changed) holds at
+roughly 2.5x the sample size, with a small, real, non-zero drift rate
+now visible that the smaller sample didn't surface.** Full results:
+[reports/EXP-DATA-001-R3.md](../../reports/EXP-DATA-001-R3.md) §A.
+
+**Paragraph claim-survival validation, 12 fresh seeds,
+`paragraph_light_controlled`/`paragraph_moderate_controlled`, UNCHANGED
+mechanism (same as EXP-DATA-001-R2-paragraph) plus the new DEC-013
+screening layer:**
+- **Light**: 11/12 QC-passed (1 flagged). **9/12 (75%) preserved, 2/12
+  (17%) changed, 1/12 (8%) questionable.**
+- **Moderate**: 12/12 QC-passed. **8/12 (67%) preserved, 1/12 (8%)
+  changed, 3/12 (25%) questionable.**
+- Both `"changed"` light samples involve a claim/priority *reversal* or
+  a claim-drop-merged-with-a-location-flip — **neither the DEC-012 nor
+  the DEC-013 screen caught either one** (both scored `likely_preserved`/
+  `no_omission_signal`). This is the first time this project has
+  observed real data in the specific gap DEC-012 flagged as theoretical
+  ("a claim change that alters no number or named entity... not observed
+  in this calibration set, but not proven absent either") — now
+  observed. See DEC-012's "Second Out-of-Sample Validation" and DEC-013's
+  "Validation Results" for full detail.
+- **This round's result is WORSE, not better, than EXP-DATA-001-R2's
+  paragraph batch (72% preserved)** — light dropped to 75% (close, within
+  noise) but with 2 real `"changed"` samples the screens missed entirely,
+  which is more concerning than a raw preservation-rate dip. **Paragraph-
+  level controlled transformation remains not ready for scale, and this
+  round adds evidence, not reassurance**, on top of EXP-DATA-001-R2's
+  claim-omission finding.
+- A real, disclosed extraction bug (`extract_span_pair`, see DEC-012)
+  was found and fixed mid-review — the initial read on one sample
+  (`7AF7BFC4BF8D`) looked like a severe omission and was corrected to
+  `preserved` after the fix; this is recorded transparently, not
+  smoothed over, since it demonstrates why re-verifying automated
+  extraction before trusting manual review conclusions built on top of
+  it matters.
+- Full results: [reports/EXP-DATA-001-R3.md](../../reports/EXP-DATA-001-R3.md) §B.
+
+### What this means for "controlled-span generation" as a category
+
+There is no single answer to "is controlled-span generation ready."
+Four sub-mechanisms now have four different evidence profiles:
+paragraph-light, paragraph-moderate, sentence-light-v2 (promising),
+sentence-moderate-v2 (not ready, root cause now localized to the
+instruction wording). Future work should track and validate these
+separately, not as one "controlled-span" bucket.
+
+## Sentence-Moderate Redesign — Candidate Instructions (design only, not yet tested, 2026-08-13)
+
+Per explicit instruction: design alternative moderate instructions now,
+do **not** run another moderate sentence experiment yet, and do not
+choose a "winner" based on pass-rate against existing samples (that
+would be threshold-shopping). Three candidates are implemented as
+importable constants (not wired into any generation script) in
+`scripts/sentence_moderate_redesign_candidates.py`, all sharing the same
+underlying design change and differing only in one added element:
+
+- **The shared design change**: replace the current instruction's only
+  preservation language — "preserving its meaning," a vague, abstract
+  phrase — with an **explicit, itemized checklist** naming exactly what
+  must not change: every number/quantity, every named person/place/
+  organization, who performs each action and to whom, every stated
+  cause-and-effect relationship, and the author's stated position or
+  conclusion. This vocabulary is deliberately the same as
+  generation-methodology.md Section 12's drift protocol, so the
+  instruction and the manual-review criteria describe the same thing.
+  All three candidates explicitly grant MORE stylistic restructuring
+  latitude than the light instruction (combine/reorder clauses, change
+  structure, choose different words) — the goal is to widen stylistic
+  freedom while narrowing factual freedom to zero, not to make
+  "moderate" a second "light."
+- **M1 (`M1_explicit_checklist`)**: the checklist alone, nothing else
+  added. The baseline candidate.
+- **M2 (`M2_checklist_plus_selfcheck`)**: M1 plus an instruction to
+  silently verify, before answering, that the same facts/numbers/names/
+  conclusion are present — still returns only the final sentence, no
+  visible reasoning (visible reasoning text in the output would itself
+  risk contaminating the sample, the same class of problem
+  `check_instruction_leakage`/`check_ai_self_reference` already guard
+  against). Rationale: an explicit verify-before-answering step may help
+  a small instruction-tuned model comply with a constraint it would
+  otherwise drop under competing pressure to "reword for clarity."
+- **M3 (`M3_checklist_plus_negative_example`)**: M1 plus a concrete,
+  generic example grounded in this project's own observed failure
+  ("do not change 'at least one' to 'at least two'; do not replace a
+  specific reason with a generic one") — testing whether a concrete
+  negative example outperforms an abstract rule, on the theory that the
+  model may not reliably infer what "changing a claim" means from
+  category names alone (numbers/entities/causal relationships) without
+  seeing the shape of an actual mistake.
+
+**Not decided here.** A future, explicitly authorized experiment should
+test these against fresh seeds under the same experimental-independence
+discipline already established for this project: same model/revision,
+same temperature (0.6)/top_p (0.95), same full-paragraph context, same
+span-selection, same QC, same DEC-012 screen — varying ONLY the
+instruction wording (M1 vs. M2 vs. M3 vs. the current baseline).
+
+## Structural validity is not semantic preservation (validated failure mode — permanent project history)
+
+**"Structural QC can pass samples that nevertheless alter the author's
+meaning."** This finding, from EXP-DATA-001-R1-confirmation and
+reconfirmed at smaller scale by EXP-DATA-001-R2, must remain part of
+this project's history and must not be re-litigated or forgotten by
+future work on this pipeline. Concretely, none of the following can
+establish that a rewrite preserved meaning — they are structural/
+diagnostic measurements only, and must never be treated as semantic
+ground truth:
+
+- **Length checks** (`length_ratio_actual_vs_target`,
+  `modification_scope_drift`) confirm a span is the right *size* — not
+  that it says the right *thing*.
+- **Resegmentation checks** confirm a spliced essay still *parses* into
+  the expected sentence structure — not that the spliced sentence means
+  what the original meant.
+- **Character-level similarity** (`difflib`) confirms two strings share
+  characters in similar positions — a paraphrase and its opposite can
+  both score high or low depending on surface wording, independent of
+  meaning.
+- **`difflib` generally** — used throughout this pipeline exclusively as
+  a diagnostic (structural-drift detection, Regime C's similarity
+  logging), never as a meaning-preservation signal.
+- **The DEC-012 automated semantic screen itself** — even though it's
+  specifically designed to approximate meaning preservation (unlike the
+  three checks above), it is *still* only a screen: calibration evidence
+  (DEC-012, and this round's out-of-sample confirmation) shows real,
+  documented false negatives on `"questionable"`-tier drift. It reduces
+  review burden; it does not replace human judgment.
 
 ## Context
 
@@ -508,24 +758,55 @@ resilience), `scripts/generation_utils.py` (pure logic:
 `pick_rewrite_sentence_index`, `pick_rewrite_paragraph_index`, other QC
 checks), `scripts/qwen_generate.py` (model wrapper),
 `scripts/apply_semantic_review.py` (mechanical merge of manual review
-into a samples file). The full-scale versions
-(`scripts/generate_samples.py`, `scripts/generate_mixed_samples.py`)
+into a samples file), `scripts/semantic_screen.py` (DEC-012's automated
+screen: `embedding_similarity`, `check_fact_preservation`,
+`classify_screen_label`), `scripts/calibrate_semantic_screen.py`
+(threshold calibration against real reviewed data),
+`scripts/apply_automated_screen.py` (post-hoc screen application),
+`scripts/run_exp_data_001_r2_paragraph.py` (fresh-seed paragraph
+re-validation, unchanged mechanism),
+`scripts/run_exp_data_001_r2_sentence.py` (sentence-level with
+`generate_sentence_transform_with_paragraph_context` — new, in
+`run_exp_data_001.py` — and controlled temperature),
+`scripts/run_exp_data_001_r3_sentence_light.py` (larger sentence-light
+confirmation, 25 fresh seeds, only sample size/seed pool changed),
+`scripts/run_exp_data_001_r3_paragraph_claim_survival.py` (paragraph
+claim-survival validation, 12 fresh seeds, unchanged generation
+mechanism), `scripts/claim_survival_screen.py` +
+`scripts/apply_claim_survival_screen.py` (DEC-013's screen),
+`scripts/sentence_moderate_redesign_candidates.py` (design-only
+candidate instructions for the sentence-moderate redesign, not yet
+tested). The full-scale versions (`scripts/generate_samples.py`, `scripts/generate_mixed_samples.py`)
 still do not exist and should follow the three-regime structure above —
-with the sentence-level caveat from the confirmation round factored in —
-when written.
+with the sentence/paragraph-specific caveats from EXP-DATA-001-R2
+factored in — when written.
 
 ## Tests / Experiments
 
 `scripts/tests/test_generation_utils.py` (pure-logic fixtures: 5
 instruction-leakage scenarios + regression test, 5 near-duplicate-scoping
 scenarios, an `autojunk` regression test, semantic-preservation validator
-tests). `scripts/tests/test_apply_semantic_review.py`. `EXP-DATA-001` —
-executed 2026-08-10, 60 real samples:
-[reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md) (preserved,
-not erased). `EXP-DATA-001-R1` — targeted redesign-validation, n=3,
-executed 2026-08-10:
+tests). `scripts/tests/test_apply_semantic_review.py`.
+`scripts/tests/test_semantic_screen.py` (11 tests: pure classification
+logic + real model-backed tests including a direct reproduction of the
+"one C"/"two Cs" failure case). `EXP-DATA-001` — executed 2026-08-10, 60
+real samples: [reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md)
+(preserved, not erased). `EXP-DATA-001-R1` — targeted
+redesign-validation, n=3, executed 2026-08-10:
 [reports/EXP-DATA-001-R1.md](../../reports/EXP-DATA-001-R1.md).
 `EXP-DATA-001-R1-confirmation` — larger-scale check, n=10 (50 records),
 executed 2026-08-10:
 [reports/EXP-DATA-001-R1-confirmation.md](../../reports/EXP-DATA-001-R1-confirmation.md).
-Design doc: `experiments/EXP-DATA-001-generation-pilot/README.md`.
+`EXP-DATA-001-R2` — semantic-preservation gate design + validation,
+n=10+10 (60 records across two separate paragraph/sentence experiments),
+executed 2026-08-13:
+[reports/EXP-DATA-001-R2.md](../../reports/EXP-DATA-001-R2.md). Design
+doc: `experiments/EXP-DATA-001-generation-pilot/README.md`.
+`EXP-DATA-001-R3` — larger sentence-light confirmation (25 fresh seeds)
++ paragraph claim-survival validation (12 fresh seeds, new DEC-013
+screen), two separate experiments, executed 2026-08-13:
+[reports/EXP-DATA-001-R3.md](../../reports/EXP-DATA-001-R3.md).
+`scripts/tests/test_claim_survival_screen.py` (11 tests),
+`scripts/tests/test_apply_automated_screen.py` (4 tests, including
+regression tests for two real extraction bugs found and fixed this
+round).
