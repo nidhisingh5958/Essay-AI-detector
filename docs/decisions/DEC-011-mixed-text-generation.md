@@ -32,10 +32,54 @@ mechanism for light/moderate polish is **abandoned as a sentence-level
 ground-truth source** — replaced by the controlled-span mechanism (Regime
 A/B, same family as surgical splice, different instruction intensity).
 Whole-essay polish is retained only as an essay-level-only category
-(Regime C). Status stays **Provisional** (not Accepted): R1 is a small,
-targeted check, not full validation at scale — a larger run (~10 seeds,
-comparable to EXP-DATA-001's original scale) is needed before the
-controlled-span mechanism specifically is considered validated.
+(Regime C).
+
+**Confirmation round (EXP-DATA-001-R1-confirmation, 2026-08-10, 50
+records, 10 NEW previously-unseen seeds, sentence AND paragraph
+light/moderate categories — see
+[reports/EXP-DATA-001-R1-confirmation.md](../../reports/EXP-DATA-001-R1-confirmation.md)
+for full results):** requested specifically to check whether R1's n=3
+finding held at scale. **Split verdict, not a uniform pass:**
+
+- **Paragraph-level controlled transformation: close to validated.**
+  19/20 passed QC cleanly, 0 resegmentation failures, 18/20 judged
+  `semantic_preservation: "preserved"` on manual review, 0
+  instruction-leakage/self-reference flags, 0 cross-family duplicates
+  (34 same-family matches correctly *not* flagged, validating this
+  round's near-duplicate scoping fix in practice).
+- **Sentence-level controlled transformation: NOT validated, real problem
+  found.** Only 12/20 passed QC cleanly, and — critically — **manual
+  semantic-preservation review found automated QC (length ratio +
+  resegmentation) does not catch semantic drift**: 4 samples that passed
+  every automated check were still judged `"changed"` on meaning (e.g. a
+  factual detail altered from "one C" to "two Cs"; a specific grievance
+  replaced by a generic sentence with no equivalent claim). Combined
+  across both sentence categories: only 5/15 reviewed samples (33%) were
+  judged `"preserved"`; 7/15 (47%) were `"changed"`.
+- **Unexplained pattern, flagged not resolved:** at the sentence level,
+  `light` instructions produced *more* scope drift and rejections than
+  `moderate` ones — the opposite of what the category names suggest.
+  Temperature also differed between the two (0.5 vs 0.7), so this
+  experiment cannot isolate whether wording or temperature (or both)
+  caused it.
+
+**Status stays Provisional — this is not a status upgrade, it's a
+refined, mixed finding.** Per the explicit instruction not to define
+success as "all samples passed" and not to mark this Accepted
+automatically: the real question — "does controlled-span generation
+produce sufficiently reliable, interpretable ground truth across
+previously unseen essays?" — now has an evidenced answer that's
+**category-specific**: yes for paragraph-level (with semantic review kept
+as an ongoing spot-check, since even paragraph-level had one real
+semantic failure), not yet for sentence-level.
+
+**Recommendation (from the confirmation report): B — promising but
+requires another revision, not ready for scale as a uniform mechanism.**
+Sentence-level needs one of: (a) a second automated signal beyond length/
+resegmentation that can catch semantic drift, (b) mandatory semantic
+review as a non-optional gate for this category, or (c) more surrounding
+context per edit, before being trusted at scale. Paragraph-level can
+reasonably proceed to a larger validation round on its own.
 
 ## Date
 2026-08-10
@@ -320,6 +364,54 @@ exactly as it was in EXP-DATA-001 §7 — as an inspection/diagnostic tool
 (structural-drift detection, documented similarity ranges) — but its
 output is never again written into a `modified_spans` field.
 
+## QC Additions From the Confirmation Round (2026-08-10)
+
+Three QC mechanisms were added or fixed while preparing
+EXP-DATA-001-R1-confirmation, each addressing a real gap found in
+existing code/data, not speculative hardening:
+
+**Near-duplicate scoping (family-aware).** Previously, `near_duplicate_pairs`
+compared every text against every other text with no notion of "family."
+EXP-DATA-001-R1 found this flags a splice-based variant as a "duplicate"
+of its own human original — expected given the mechanism, not a real
+anomaly. `near_duplicate_pairs_scoped` now separates `cross_family`
+(the real detection target — two *different* seed essays producing
+suspiciously similar output) from `same_family` (informational,
+never treated as suspicious). Validated in the confirmation round: 0
+cross-family flags, 34 same-family matches correctly not flagged.
+
+**`SequenceMatcher` `autojunk` bug.** Found while building the scoped
+duplicate check: Python's `difflib.SequenceMatcher` defaults to
+`autojunk=True`, which materially understates similarity for text over
+~200 characters (observed: a single-word change in a ~200-character
+sentence scored ~0.28 instead of ~0.97). Fixed with `autojunk=False` in
+both `near_duplicate_pairs_scoped` and `align_and_diff_sentences` — the
+latter is a correction to code EXP-DATA-001 already used, meaning that
+pilot's reported Regime C similarity range (0.07–0.97, no separable
+threshold) was computed with the buggy default. **This is not
+re-litigated here**: EXP-DATA-001's *structural* finding (70%
+sentence-count mismatch) is completely unaffected by this bug (it's a
+count comparison, not a similarity score), and Regime C's redesign
+(essay-level-only, no threshold) doesn't depend on the exact similarity
+numbers being right — but the specific range figures quoted from
+EXP-DATA-001 should be read as approximate, not exact, going forward.
+
+**`semantic_preservation` field.** Added per explicit instruction: a
+provenance/QC field (`not_yet_reviewed` / `preserved` / `questionable` /
+`changed`) tracking whether a controlled rewrite preserved the source's
+underlying meaning and claims, independent of structural QC. **Assigned
+by manual human review only — never by a model call within this
+pipeline** (that would be exactly the LLM-as-ground-truth-judge pattern
+DEC-004 rules out elsewhere). `scripts/apply_semantic_review.py` performs
+the mechanical merge of a hand-written review into a samples file; it
+does not generate the review itself. **This field turned out to be the
+single most important addition in the confirmation round**: it found 4
+samples that passed every automated check (length ratio, resegmentation)
+while still changing the essay's actual meaning — evidence that
+structural QC alone is insufficient for the sentence-level categories,
+which motivated the "not ready for scale" verdict for that regime (see
+below).
+
 ## Trade-offs
 
 The surgical-splice categories may read as slightly less globally
@@ -366,57 +458,74 @@ Negative:
    [reports/EXP-DATA-001-R1.md](../../reports/EXP-DATA-001-R1.md) for
    results and whether the redesign holds up.
 5. ~~Dedicated length-control mechanism for the controlled-span light/
-   moderate categories~~ — **partially addressed, 2026-08-10**: the
-   `modification_scope_drift` check (documented per-category expected
-   length-ratio range, flags rather than assumes compliance) was added
-   and caught a real violation in R1 (ratio 2.71 vs. expected [0.7,
-   1.3]). R1's *passing* samples showed excellent length match (e.g.
-   12/12, 17/17 words) without any additional truncation mechanism
-   needed at the span level — but n=3 per category is too small to
-   conclude the mechanism is sufficient at scale. **Still open**: confirm
-   this holds at a larger sample size before treating span-level length
-   control as solved.
-6. Still open: **near-duplicate check needs per-category scoping** — R1
-   found it flags a splice-based variant as "near-duplicate" of its own
-   human original, which is expected given the mechanism (only one
-   sentence differs) and not a real duplication problem, but the check
-   doesn't currently know that. Not yet fixed.
+   moderate categories~~ — **confirmed at scale for paragraph-level,
+   2026-08-10**: `modification_scope_drift` combined with the tighter
+   paragraph-level ratio distribution (§4 of the confirmation report)
+   shows span-level length control works well for paragraphs. **Still
+   open for sentence-level**: wider, less predictable ratio distribution
+   (0.41–2.68) with `light` performing worse than `moderate` for reasons
+   this experiment couldn't isolate (§10 of the confirmation report).
+6. ~~Near-duplicate check needs per-category scoping~~ — **done,
+   2026-08-10**: `near_duplicate_pairs_scoped` (family-aware), 5
+   regression tests, validated in the confirmation round (0 cross-family
+   false positives, 34 same-family matches correctly not flagged). See
+   "QC Additions From the Confirmation Round" above.
 7. Still open: whether the model itself (escalating to
-   Phi-3.5-mini-instruct, DEC-010) needs to change, now properly
-   separable from the methodology question since the methodology has
-   been redesigned and re-tested independently.
-8. Still open: **R1 did not re-exercise `full_ai` generation**, so the
-   `check_instruction_leakage` fix's real-world false-positive rate on
-   that specific category is confirmed only by the unit-level regression
-   test, not by a second live sample — worth checking in any future run
+   Phi-3.5-mini-instruct, DEC-010) needs to change for the sentence-level
+   categories specifically, now that the *methodology* gap there
+   (semantic drift undetected by structural QC) is understood rather
+   than being confounded with a model-quality question.
+8. Still open: **`full_ai` still hasn't been re-exercised** with the
+   fixed `check_instruction_leakage` in a live run (the confirmation
+   round didn't include `full_ai`, by design — it was scoped to the
+   controlled-span categories only). Worth checking in any future run
    that includes `full_ai`.
-9. If paragraph boundaries turn out not to survive in the acquired
-   corpus's raw text — **resolved, 2026-08-10: they do, in ~95% of
-   essays** (see DEC-009's inspection update and
-   [reports/dataset-inspection.md](../../reports/dataset-inspection.md)).
+9. ~~Paragraph boundaries might not survive in the acquired corpus~~ —
+   resolved (DEC-009). Confirmed compatible with the controlled-span
+   mechanism specifically: 0 resegmentation failures across 20 paragraph
+   attempts in the confirmation round.
+10. **New, from the confirmation round**: sentence-level controlled
+    transformation needs one of — (a) a second automated signal beyond
+    length/resegmentation that can catch semantic drift, (b) mandatory
+    semantic review as a non-optional gate, or (c) more surrounding
+    context per edit — before being trusted at scale. Not yet
+    implemented; a design/alternatives comparison for whichever path is
+    chosen belongs in a future DEC-011 revision, not decided here.
 
 ## Implementation
 
 `scripts/run_exp_data_001.py` (original pilot orchestrator, patched
-post-pilot for the QC fix and Regime C reclassification — not re-run in
-full), `scripts/run_exp_data_001_r1.py` (targeted validation of the
-controlled-span redesign), `scripts/generation_utils.py` (pure logic:
-`align_and_diff_sentences` — now documented as diagnostic-only,
+post-pilot for the QC fix, Regime C reclassification, and the generic
+`generate_sentence_transform`/`generate_paragraph_transform` refactor —
+not re-run in full), `scripts/run_exp_data_001_r1.py` (targeted
+validation of the controlled-span redesign, n=3),
+`scripts/run_exp_data_001_r1_confirmation.py` (larger-scale confirmation,
+n=10, resumable — see script docstring re: session-interruption
+resilience), `scripts/generation_utils.py` (pure logic:
+`align_and_diff_sentences` — diagnostic-only, `autojunk=False` fix,
 `check_instruction_leakage`, `check_ai_self_reference`,
+`near_duplicate_pairs_scoped`, `validate_semantic_preservation`,
 `pick_rewrite_sentence_index`, `pick_rewrite_paragraph_index`, other QC
-checks), `scripts/qwen_generate.py` (model wrapper). The full-scale
-versions (`scripts/generate_samples.py`, `scripts/generate_mixed_samples.py`)
-still do not exist and should follow the three-regime structure above
+checks), `scripts/qwen_generate.py` (model wrapper),
+`scripts/apply_semantic_review.py` (mechanical merge of manual review
+into a samples file). The full-scale versions
+(`scripts/generate_samples.py`, `scripts/generate_mixed_samples.py`)
+still do not exist and should follow the three-regime structure above —
+with the sentence-level caveat from the confirmation round factored in —
 when written.
 
 ## Tests / Experiments
 
-`scripts/tests/test_generation_utils.py` (pure-logic fixtures, including
-5 required instruction-leakage scenarios and a preserved regression test
-for the original false-positive bug). `EXP-DATA-001` — executed
-2026-08-10, 60 real samples, full results:
-[reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md) (preserved
-findings, not erased). `EXP-DATA-001-R1` — targeted redesign-validation,
-executed 2026-08-10, results:
-[reports/EXP-DATA-001-R1.md](../../reports/EXP-DATA-001-R1.md). Design
-doc: `experiments/EXP-DATA-001-generation-pilot/README.md`.
+`scripts/tests/test_generation_utils.py` (pure-logic fixtures: 5
+instruction-leakage scenarios + regression test, 5 near-duplicate-scoping
+scenarios, an `autojunk` regression test, semantic-preservation validator
+tests). `scripts/tests/test_apply_semantic_review.py`. `EXP-DATA-001` —
+executed 2026-08-10, 60 real samples:
+[reports/EXP-DATA-001.md](../../reports/EXP-DATA-001.md) (preserved,
+not erased). `EXP-DATA-001-R1` — targeted redesign-validation, n=3,
+executed 2026-08-10:
+[reports/EXP-DATA-001-R1.md](../../reports/EXP-DATA-001-R1.md).
+`EXP-DATA-001-R1-confirmation` — larger-scale check, n=10 (50 records),
+executed 2026-08-10:
+[reports/EXP-DATA-001-R1-confirmation.md](../../reports/EXP-DATA-001-R1-confirmation.md).
+Design doc: `experiments/EXP-DATA-001-generation-pilot/README.md`.

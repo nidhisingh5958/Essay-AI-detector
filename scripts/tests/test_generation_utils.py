@@ -12,10 +12,12 @@ from generation_utils import (
     check_length_bounds,
     modified_sentence_indices,
     near_duplicate_pairs,
+    near_duplicate_pairs_scoped,
     pick_rewrite_paragraph_index,
     pick_rewrite_sentence_index,
     select_seed_essays,
     truncate_to_word_budget,
+    validate_semantic_preservation,
 )
 
 
@@ -53,6 +55,28 @@ def test_align_and_diff_sentences_pairs_up_matching_counts():
     assert len(result["pairs"]) == 2
     assert result["pairs"][0][2] == 1.0  # identical sentence -> similarity 1.0
     assert result["pairs"][1][2] < 1.0
+
+
+def test_align_and_diff_sentences_does_not_understate_similarity_for_long_sentences():
+    """Regression test: difflib.SequenceMatcher's default autojunk=True
+    treats characters as "popular" (excluded from matching) once a
+    sequence passes 200 characters -- for a long sentence differing by
+    only one word, that default badly understated similarity (observed:
+    ~0.28 instead of ~0.97 for the fixture below) during EXP-DATA-001-R1
+    confirmation-round development. align_and_diff_sentences must pass
+    autojunk=False to avoid this."""
+    original = (
+        "Community service teaches students responsibility and empathy, and it also "
+        "helps young people build lasting connections within their own neighborhoods."
+    )
+    edited = (
+        "Community service teaches students responsibility and compassion, and it also "
+        "helps young people build lasting connections within their own neighborhoods."
+    )
+    result = align_and_diff_sentences([original], [edited])
+    assert result["structure_drift"] is False
+    similarity = result["pairs"][0][2]
+    assert similarity > 0.9  # one word differs in a ~180-character sentence -- should read as highly similar
 
 
 def test_modified_sentence_indices_uses_threshold():
@@ -238,3 +262,87 @@ def test_near_duplicate_pairs_finds_matches_and_ignores_distinct_texts():
     ]
     pairs = near_duplicate_pairs(texts)
     assert pairs == [(0, 1)]
+
+
+# --- near_duplicate_pairs_scoped: the 5 required regression scenarios ---
+# (family-aware duplicate detection, added after EXP-DATA-001-R1 found the
+# flat check flags expected same-family similarity as if it were a bug)
+
+_HUMAN_ORIGINAL_FAM1 = (
+    "Community service teaches students responsibility and empathy. "
+    "Volunteering at a shelter or park cleanup builds character. "
+    "Students who serve their community often report a greater sense of belonging."
+)
+_LIGHT_EDIT_FAM1 = (
+    "Community service teaches students responsibility and compassion. "
+    "Volunteering at a shelter or park cleanup builds character. "
+    "Students who serve their community often report a greater sense of belonging."
+)
+_PARAGRAPH_EDIT_FAM1 = (
+    "Community service instills a sense of duty and empathy in young people. "
+    "Volunteering at a shelter or park cleanup builds character. "
+    "Students who serve their community often report a greater sense of belonging."
+)
+
+
+def test_scoped_1_same_family_transformed_samples_are_allowed():
+    items = [
+        ("fam1__sentence_light", "fam1", _LIGHT_EDIT_FAM1),
+        ("fam1__paragraph_light", "fam1", _PARAGRAPH_EDIT_FAM1),
+    ]
+    result = near_duplicate_pairs_scoped(items, near_similarity_threshold=0.9)
+    assert result["cross_family"] == []
+    # They are similar (same family, expected) -- may appear as informational same_family, never as cross_family.
+    assert all(pair[0] != pair[1] for pair in result["same_family"])
+
+
+def test_scoped_2_same_family_original_and_transformed_are_allowed():
+    items = [
+        ("fam1__human", "fam1", _HUMAN_ORIGINAL_FAM1),
+        ("fam1__sentence_light", "fam1", _LIGHT_EDIT_FAM1),
+    ]
+    result = near_duplicate_pairs_scoped(items, near_similarity_threshold=0.9)
+    assert result["cross_family"] == []
+    assert len(result["same_family"]) == 1  # flagged as similar, but same-family, so never "suspicious"
+    pair_ids = result["same_family"][0][:2]
+    assert set(pair_ids) == {"fam1__human", "fam1__sentence_light"}
+
+
+def test_scoped_3_identical_outputs_from_different_families_are_flagged():
+    items = [
+        ("fam1__full_ai", "fam1", "Phones should be allowed in class for emergencies only."),
+        ("fam2__full_ai", "fam2", "Phones should be allowed in class for emergencies only."),
+    ]
+    result = near_duplicate_pairs_scoped(items)
+    assert len(result["cross_family"]) == 1
+    assert result["cross_family"][0][:2] == ("fam1__full_ai", "fam2__full_ai")
+    assert result["cross_family"][0][2] == 1.0
+    assert result["same_family"] == []
+
+
+def test_scoped_4_near_identical_outputs_from_different_families_are_flagged():
+    items = [
+        ("fam1__full_ai", "fam1", "Phones should be allowed in class for genuine emergencies only, nothing else."),
+        ("fam2__full_ai", "fam2", "Phones should be allowed in class for real emergencies only, nothing else."),
+    ]
+    result = near_duplicate_pairs_scoped(items, near_similarity_threshold=0.85)
+    assert len(result["cross_family"]) == 1
+    assert result["cross_family"][0][2] >= 0.85
+
+
+def test_scoped_5_unrelated_outputs_are_not_flagged():
+    items = [
+        ("fam1__full_ai", "fam1", "Community service teaches responsibility and builds character over time."),
+        ("fam2__full_ai", "fam2", "Driverless cars raise complex questions about liability, safety, and regulation."),
+    ]
+    result = near_duplicate_pairs_scoped(items)
+    assert result["cross_family"] == []
+    assert result["same_family"] == []
+
+
+def test_validate_semantic_preservation_accepts_known_values_only():
+    assert validate_semantic_preservation("preserved") is True
+    assert validate_semantic_preservation("questionable") is True
+    assert validate_semantic_preservation("changed") is True
+    assert validate_semantic_preservation("not_yet_reviewed") is True
+    assert validate_semantic_preservation("definitely_fine") is False

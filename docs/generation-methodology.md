@@ -1,23 +1,30 @@
 # Machine & Mixed Text Generation Methodology
 
-> Status: **Pilot-tested and redesigned (EXP-DATA-001 + EXP-DATA-001-R1,
+> Status: **Pilot-tested, redesigned, and confirmed at scale
+> (EXP-DATA-001 → EXP-DATA-001-R1 → EXP-DATA-001-R1-confirmation,
 > 2026-08-10).** EXP-DATA-001 (60 samples) found the whole-essay-
 > instruction-plus-diff mechanism for light/moderate polish did not
-> reliably produce sentence-level ground truth (70% structural drift, no
-> separable similarity threshold — see
-> [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md)). Rather than
-> patching that mechanism with a threshold, it was **redesigned**: whole-
-> essay polish is now Regime C (essay-level-only ground truth, never used
-> for sentence metrics), and a new controlled-span mechanism produces
-> sentence-level light/moderate examples using the *same* surgical-splice
-> guarantee as the original sentence/paragraph rewrite categories. This
-> redesign was targeted-validated in EXP-DATA-001-R1 (15 samples) — see
-> [reports/EXP-DATA-001-R1.md](../reports/EXP-DATA-001-R1.md). The
-> document below reflects the current (post-redesign) methodology, not
-> the original pre-pilot sketch. Related decisions:
-> [DEC-010](decisions/DEC-010-machine-generation-model.md) (generation
-> model), [DEC-011](decisions/DEC-011-mixed-text-generation.md)
-> (mixed-sample mechanism, including the full redesign rationale).
+> reliably produce sentence-level ground truth (70% structural drift —
+> [report](../reports/EXP-DATA-001.md)). Redesigned: whole-essay polish
+> is now Regime C (essay-level-only, never sentence metrics), and a
+> controlled-span mechanism produces sentence-level light/moderate
+> examples via the same surgical-splice guarantee as the original
+> rewrite categories. EXP-DATA-001-R1 (n=3,
+> [report](../reports/EXP-DATA-001-R1.md)) found this promising.
+> **EXP-DATA-001-R1-confirmation (n=10, 50 records,
+> [report](../reports/EXP-DATA-001-R1-confirmation.md)) found a
+> category-specific split**: paragraph-level controlled transformation is
+> close to validated (19/20 QC-passed, 18/20 meaning-preserved);
+> sentence-level is **not** — manual semantic review found 47% of
+> reviewed sentence-level samples changed the essay's actual meaning,
+> including 4 that passed every automated check. Structural QC alone
+> (length ratio + resegmentation) does not catch this. The document below
+> reflects the current methodology and states this split plainly rather
+> than treating "controlled-span" as one validated mechanism. Related
+> decisions: [DEC-010](decisions/DEC-010-machine-generation-model.md)
+> (generation model), [DEC-011](decisions/DEC-011-mixed-text-generation.md)
+> (mixed-sample mechanism, including the full redesign and confirmation
+> rationale).
 
 ## 1. The core idea: families, not independent samples
 
@@ -152,6 +159,31 @@ Ground truth here needs no diffing: we chose exactly which sentences
 would be replaced, so we know exactly which ones are AI-authored,
 regardless of instruction intensity.
 
+**Important qualification added after EXP-DATA-001-R1-confirmation
+(2026-08-10, 50 records — [report](../reports/EXP-DATA-001-R1-confirmation.md)):**
+"exact ground truth" above describes *which characters were replaced*,
+not *whether the replacement preserved the original's meaning*. Those
+are different guarantees. The confirmation round found:
+
+- **Paragraph-granularity (Regime B)**: reliable on both counts — 19/20
+  passed structural QC, 18/20 preserved meaning on manual review.
+- **Sentence-granularity (Regime A)**: reliable structurally most of the
+  time (12/20 passed cleanly) but **not reliably meaning-preserving even
+  when structural QC passes** — 4 samples that passed every automated
+  check (length ratio, resegmentation) were found on manual review to
+  have changed the essay's actual meaning (e.g. a factual detail altered,
+  a specific claim replaced by a generic sentence carrying no equivalent
+  content). Combined sentence-level semantic-preservation rate: 33%
+  preserved, 47% changed, among reviewed samples.
+
+**Practical consequence:** do not treat `ground_truth_confidence: "high"`
+for sentence-level categories as implying the *content* is faithful —
+it only means the *span attribution* (which characters are AI-authored)
+is exact. Whether those characters preserved the source's meaning is a
+separate, currently-unresolved question for sentence-level specifically
+(see `semantic_preservation`, Section 8 and Section 9 below, and
+DEC-011's confirmation-round update for the open remediation options).
+
 ### Regime C — Whole-essay categories (essay-level-only ground truth)
 
 `light_polish`, `moderate_polish`, `heavy_revision`:
@@ -269,11 +301,28 @@ hard to classify:
 8. For Regime C (whole-essay) samples: structural drift is logged as an
    informative note, not a rejection reason (Section 4) — it no longer
    invalidates the sample now that Regime C makes no sentence-level claim.
-9. Duplicate / near-duplicate detection: exact duplicates via a hash of
-   normalized text; near-duplicates via n-gram overlap between
-   full-generation samples that share a prompt (flagging, e.g., >0.6
-   Jaccard similarity on word 5-grams as a candidate near-duplicate,
-   pending real examples to check that threshold against).
+9. **Family-aware duplicate detection** (`near_duplicate_pairs_scoped`,
+   added 2026-08-10 after EXP-DATA-001-R1 found the original flat check
+   flags expected same-family similarity as if it were a defect): same-
+   family matches (a splice variant vs. its own human original or
+   siblings) are informational only and never flagged as suspicious;
+   only **cross-family** matches (two different seed essays producing
+   suspiciously similar output) are treated as a real finding. Validated
+   in the confirmation round: 0 cross-family flags, 34 same-family
+   matches correctly not flagged.
+10. **Semantic preservation** (`semantic_preservation`, added 2026-08-10):
+    does a controlled rewrite preserve the source's underlying meaning
+    and claims? **Assigned by manual human review only — never by a
+    model call in this pipeline** (that would be the LLM-as-ground-truth-
+    judge pattern DEC-004 rules out everywhere else). Values:
+    `not_yet_reviewed` (the only value ever set automatically),
+    `preserved`, `questionable`, `changed`. This check exists *in
+    addition to* structural QC (items 1–8 above), not instead of it — the
+    confirmation round found structural QC alone misses real semantic
+    drift (4 samples passed every automated check while changing
+    meaning; see [report](../reports/EXP-DATA-001-R1-confirmation.md)).
+    `scripts/apply_semantic_review.py` merges a hand-written review into
+    a samples file; it performs no judgment itself.
 
 **Every rejection is logged with its reason** (e.g. to
 `data/generation_rejects.jsonl` once implemented) — never silently
@@ -282,30 +331,39 @@ rather than just dropping hard cases.
 
 ## 9. Metadata schema
 
-Every sample gets a record (illustrative example below — this is a
-hand-written example for design review, not real generated data):
+Below is a **real record** from EXP-DATA-001-R1-confirmation (not a
+hand-written illustration — the schema below is the one actually
+implemented in `run_exp_data_001.py`'s `make_sample_record`, current as
+of 2026-08-10):
 
 ```json
 {
-  "sample_id": "persuade_00001__sentence_rewrite_single",
-  "family_id": "persuade_00001",
+  "sample_id": "93B23DB0F67B__sentence_light_controlled",
+  "family_id": "93B23DB0F67B",
+  "split": "train",
   "source_corpus": "persuade_2.0",
-  "prompt_id": "prompt_007",
   "label": "ai_assisted",
-  "transformation_type": "sentence_rewrite_single",
-  "source_sample_id": "persuade_00001",
-  "modified_spans": [
-    {"sentence_index": 4, "char_start": 812, "char_end": 941}
-  ],
+  "transformation_type": "sentence_light_controlled",
+  "source_sample_id": "93B23DB0F67B__human",
+  "text": "Students taking classes from home is a advantage and disadvantage. ... Goin' to school to learn is the best way; the teacher can explain them. ...",
+  "actual_length_words": 319,
+  "target_length_words": 14,
+  "intended_span_index": 3,
+  "span_target_words": 14,
+  "span_actual_words": 14,
+  "length_ratio_actual_vs_target": 1.0,
   "ground_truth_confidence": "high",
-  "generation_model": "Qwen2.5-1.5B-Instruct",
-  "generation_model_revision": "<pinned HF commit sha, not yet recorded>",
-  "generation_config": {"temperature": 0.85, "top_p": 0.95, "seed": 4821},
-  "prompt_template_id": "sentence_rewrite_v1",
-  "target_length_words": 612,
-  "actual_length_words": 609,
-  "source_length_words": 612,
-  "generation_timestamp": "2026-08-10T00:00:00Z",
+  "modified_spans": [{"sentence_index": 3, "char_start": 332, "char_end": 403}],
+  "resegmentation_ok": true,
+  "generation_model": "Qwen/Qwen2.5-1.5B-Instruct",
+  "generation_model_revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+  "generation_config": {"temperature": 0.5, "top_p": 0.95, "seed": 1006, "max_new_tokens": 50},
+  "prompt_template_id": "sentence_light_controlled_v1",
+  "instruction_leakage_flagged": false,
+  "ai_self_reference_flagged": false,
+  "cross_family_duplicate_flag": false,
+  "semantic_preservation": "preserved",
+  "semantic_preservation_notes": "Near-verbatim grammar cleanup; meaning fully preserved.",
   "qc_status": "passed",
   "qc_notes": []
 }
@@ -314,31 +372,56 @@ hand-written example for design review, not real generated data):
 Field notes:
 - `family_id` is the leakage-prevention key (Section 6).
 - `source_sample_id` is `null` for `human` and `full_ai` (no splice
-  source); for mixed samples it points at the human original.
-- `modified_spans` is `[]` for `human`, spans the whole text for
-  `full_ai`, and lists exact sentence/char ranges for the surgical-splice
-  categories; for diff-based categories it lists whichever sentences were
-  judged AI-touched by the alignment check.
-- `ground_truth_confidence` is one of `high` (splice or full generation),
-  `approximate` (diff-based), `essay_level_only` (heavy revision).
-- `qc_status` is `passed`, or a specific rejection reason (`empty_output`,
-  `length_out_of_bounds`, `prompt_leakage`, `excessive_repetition`,
-  `structure_drift`, `near_duplicate`, ...).
+  source); for mixed samples it points at the human original's
+  `sample_id`.
+- `actual_length_words`/`target_length_words` describe the **whole
+  record's text** (e.g. the entire spliced essay); `span_actual_words`/
+  `span_target_words`/`length_ratio_actual_vs_target` describe the
+  **edited span specifically** — added 2026-08-10 after early analysis
+  conflated the two (see project history). Always use the span-level
+  fields when asking "did this edit respect its intended length?"
+- `intended_span_index` and `modified_spans` are always present for
+  Regime A/B samples (`None`/`[]` if the sample was skipped or rejected
+  before a span could be confirmed).
+- `ground_truth_confidence` is one of `high` (Regime A/B splice or full
+  generation) or `essay_level_only` (Regime C — see Section 4). The
+  earlier `approximate` value from the original pre-pilot design no
+  longer exists; Regime C never produces a sentence-level label at any
+  confidence level.
+- `resegmentation_ok`, `instruction_leakage_flagged`,
+  `ai_self_reference_flagged` are explicit booleans always present (not
+  just noted when true), so pass/fail distributions can be reported even
+  for checks that never fired.
+- `semantic_preservation` is `not_yet_reviewed` unless a human has
+  reviewed the sample (Section 8, item 10) — never set to `preserved`/
+  `questionable`/`changed` automatically.
+- `qc_status` is `passed`, `flagged` (non-fatal notes present),
+  `rejected` (a disqualifying check failed — `empty_output` or, for
+  Regime A/B, `splice_resegmentation_mismatch`), or `skipped` (no
+  suitable span found before generation was even attempted).
 
 ## 10. What this document does not cover yet
 
 - A diff-similarity threshold for Regime C was investigated and
   deliberately **not set** — EXP-DATA-001 found no separable distribution
   to threshold, and Regime C no longer needs one (see Section 4).
-- Length control for the new controlled-span light/moderate categories
-  (Regime A) — check EXP-DATA-001-R1's findings; not yet confirmed
-  whether span-level length drift is also a problem.
+- **Sentence-level (Regime A) semantic-drift remediation** — the
+  confirmation round (Section 11) found a real problem (47% of reviewed
+  samples changed meaning despite passing structural QC) but this
+  document doesn't yet specify the fix. Candidates recorded in DEC-011,
+  not chosen yet: a second automated signal beyond length/resegmentation,
+  mandatory semantic review as a gate, or more surrounding context per
+  edit.
 - `scripts/generate_samples.py`, `scripts/generate_mixed_samples.py`
   (full-scale, production versions) — still don't exist; should follow
-  the three-regime structure once written. `scripts/extract_prompts.py`
-  exists and has been run for real (Section 2).
+  the three-regime structure once written, **with the sentence-level
+  caveat above factored into the design, not deferred again**.
+  `scripts/extract_prompts.py` exists and has been run for real (Section 2).
 - `sentence_rewrite_multi`, `paragraph_rewrite_multi` — designed, not yet
   exercised in any pilot.
+- Why sentence-level `light` instructions produced *more* drift than
+  `moderate` ones (Section 11) — observed, not explained (temperature
+  and wording both varied together in the experiments run so far).
 
 ## 11. Pilots run so far
 
@@ -349,11 +432,23 @@ reliable sentence-level ground truth. Full results:
 [reports/EXP-DATA-001.md](../reports/EXP-DATA-001.md) — preserved as
 project history, not overwritten by the redesign.
 
-**EXP-DATA-001-R1** (2026-08-10, targeted validation of the post-pilot
-redesign — controlled-span light/moderate categories, Regime C
+**EXP-DATA-001-R1** (2026-08-10, 18 records, targeted validation of the
+post-pilot redesign — controlled-span light/moderate categories, Regime C
 reclassification, and the QC leakage fix): see
 [reports/EXP-DATA-001-R1.md](../reports/EXP-DATA-001-R1.md).
 
-Both are **data-generation validation experiments**, not
+**EXP-DATA-001-R1-confirmation** (2026-08-10, 50 records, 10 previously-
+unseen seeds, sentence AND paragraph light/moderate controlled
+categories): found a **category-specific split** — paragraph-level
+controlled transformation close to validated (19/20 QC-passed, 18/20
+meaning-preserved); sentence-level not ready (12/20 QC-passed, and
+critically, structural QC alone misses real semantic drift — 4 samples
+passed every automated check while still changing meaning). Also fixed a
+real `difflib.SequenceMatcher` `autojunk` bug found along the way (badly
+understated similarity for text over ~200 characters) and added
+family-aware near-duplicate detection. Full results:
+[reports/EXP-DATA-001-R1-confirmation.md](../reports/EXP-DATA-001-R1-confirmation.md).
+
+All three are **data-generation validation experiments**, not
 detector-performance evaluations — no classification or accuracy claim
-is made from either.
+is made from any of them.

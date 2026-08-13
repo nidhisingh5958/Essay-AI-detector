@@ -163,7 +163,39 @@ def make_sample_record(
     sample_id, family_id, split, label, transformation_type, source_sample_id, text,
     ground_truth_confidence, modified_spans, generation_config, prompt_template_id,
     target_length_words, qc_status, qc_notes,
+    intended_span_index=None,
+    span_target_words=None,
+    span_actual_words=None,
+    resegmentation_ok=None,
+    instruction_leakage_flagged=False,
+    ai_self_reference_flagged=False,
+    cross_family_duplicate_flag=False,
+    semantic_preservation=None,
+    semantic_preservation_notes=None,
 ):
+    """Fields added for EXP-DATA-001-R1 confirmation-round measurability
+    (all optional, default to None/False so EXP-DATA-001/R1's original
+    call sites -- preserved, not rewritten -- remain valid):
+
+    - intended_span_index / span_target_words / span_actual_words: the
+      SPAN-level (not whole-essay) target vs. actual, since the
+      whole-record actual_length_words/target_length_words below
+      describe the whole spliced text and conflating the two was a
+      source of confusion in earlier analysis.
+    - resegmentation_ok: explicit bool, not just a qc_notes string.
+    - instruction_leakage_flagged / ai_self_reference_flagged: explicit
+      bools, always present (not just noted when true), so raw
+      distributions can be reported even when nothing was flagged.
+    - cross_family_duplicate_flag: filled in post-hoc by a batch
+      near_duplicate_pairs_scoped pass, default False.
+    - semantic_preservation / semantic_preservation_notes: manual-review
+      fields (see generation_utils.SEMANTIC_PRESERVATION_VALUES) --
+      never set automatically to anything but "not_yet_reviewed" or None.
+    """
+    length_ratio = None
+    if span_target_words and span_actual_words is not None and span_target_words > 0:
+        length_ratio = round(span_actual_words / span_target_words, 3)
+
     return {
         "sample_id": sample_id,
         "family_id": family_id,
@@ -175,39 +207,69 @@ def make_sample_record(
         "text": text,
         "actual_length_words": len(text.split()) if text else 0,
         "target_length_words": target_length_words,
+        "intended_span_index": intended_span_index,
+        "span_target_words": span_target_words,
+        "span_actual_words": span_actual_words,
+        "length_ratio_actual_vs_target": length_ratio,
         "ground_truth_confidence": ground_truth_confidence,
         "modified_spans": modified_spans,
+        "resegmentation_ok": resegmentation_ok,
         "generation_model": qwen_generate.MODEL_NAME if generation_config else None,
         "generation_model_revision": qwen_generate.model_revision() if generation_config else None,
         "generation_config": generation_config,
         "prompt_template_id": prompt_template_id,
+        "instruction_leakage_flagged": instruction_leakage_flagged,
+        "ai_self_reference_flagged": ai_self_reference_flagged,
+        "cross_family_duplicate_flag": cross_family_duplicate_flag,
+        "semantic_preservation": semantic_preservation,
+        "semantic_preservation_notes": semantic_preservation_notes,
         "qc_status": qc_status,
         "qc_notes": qc_notes,
     }
 
 
-def run_qc_common(meta_instruction: str | None, text: str, min_words: int, max_words: int) -> list[str]:
+def run_qc_common(meta_instruction: str | None, text: str, min_words: int, max_words: int) -> tuple[list[str], dict]:
     """`meta_instruction` must be the META/wrapper-only instruction text
     (see the *_META constants above) -- never the fully-interpolated
     instruction, which would embed prompt/target content the output is
-    expected to legitimately reference (see POST-PILOT PATCH note)."""
+    expected to legitimately reference (see POST-PILOT PATCH note).
+
+    Returns (notes, flags). `flags` exposes each check's boolean result
+    explicitly (not just as a conditional note string), so raw
+    pass/fail distributions can be reported even for checks that never
+    fired -- per the explicit instruction to report full distributions,
+    not just violations."""
+    flags = {
+        "empty_output": False,
+        "length_out_of_bounds": False,
+        "instruction_leakage": False,
+        "ai_self_reference": False,
+        "excessive_repetition": False,
+        "instruction_artifact": False,
+    }
     notes = []
     if gu.check_empty_output(text):
         notes.append("empty_output")
-        return notes  # nothing else is checkable on empty text
+        flags["empty_output"] = True
+        return notes, flags  # nothing else is checkable on empty text
     word_count = len(text.split())
     if not gu.check_length_bounds(word_count, min_words, max_words):
         notes.append(f"length_out_of_bounds(words={word_count},min={min_words},max={max_words})")
+        flags["length_out_of_bounds"] = True
     if meta_instruction and gu.check_instruction_leakage(meta_instruction, text):
         notes.append("instruction_leakage")
+        flags["instruction_leakage"] = True
     if gu.check_ai_self_reference(text):
         notes.append("ai_self_reference")
-    flagged, ratio = gu.check_excessive_repetition([w.lower() for w in text.split()])
-    if flagged:
+        flags["ai_self_reference"] = True
+    repetition_flagged, ratio = gu.check_excessive_repetition([w.lower() for w in text.split()])
+    if repetition_flagged:
         notes.append(f"excessive_repetition(ratio={ratio:.2f})")
+        flags["excessive_repetition"] = True
     if gu.check_instruction_artifacts(text):
         notes.append("instruction_artifact_preamble")
-    return notes
+        flags["instruction_artifact"] = True
+    return notes, flags
 
 
 def generate_full_ai(seed: dict, split: str) -> dict:
@@ -226,7 +288,7 @@ def generate_full_ai(seed: dict, split: str) -> dict:
     sentences = segment_sentences(text, doc=doc) if doc is not None else []
     truncated = gu.truncate_to_word_budget(text, [s.end_char for s in sentences], target_words) if sentences else text
 
-    notes = run_qc_common(meta_instruction, truncated, min_words=30, max_words=int(target_words * 2))
+    notes, flags = run_qc_common(meta_instruction, truncated, min_words=30, max_words=int(target_words * 2))
     qc_status = "passed" if not notes else "flagged"
 
     return make_sample_record(
@@ -244,6 +306,8 @@ def generate_full_ai(seed: dict, split: str) -> dict:
         target_length_words=target_words,
         qc_status=qc_status,
         qc_notes=notes,
+        instruction_leakage_flagged=flags["instruction_leakage"],
+        ai_self_reference_flagged=flags["ai_self_reference"],
     )
 
 
@@ -273,7 +337,7 @@ def generate_polish(seed: dict, split: str, category: str) -> dict:
     # Diagnostic only -- see docstring. Not used to set modified_spans.
     diff = gu.align_and_diff_sentences([s.text for s in orig_sentences], [s.text for s in cand_sentences])
 
-    notes = run_qc_common(meta_instruction, candidate_text, min_words=30, max_words=int(seed["word_count"] * 2))
+    notes, flags = run_qc_common(meta_instruction, candidate_text, min_words=30, max_words=int(seed["word_count"] * 2))
     orig_words = seed["word_count"]
     cand_words = len(candidate_text.split())
     if orig_words and abs(cand_words - orig_words) / orig_words > 0.4:
@@ -303,6 +367,8 @@ def generate_polish(seed: dict, split: str, category: str) -> dict:
             target_length_words=orig_words,
             qc_status=qc_status,
             qc_notes=notes,
+            instruction_leakage_flagged=flags["instruction_leakage"],
+            ai_self_reference_flagged=flags["ai_self_reference"],
         ),
         "diff": diff,  # diagnostic export only (diffs.json)
     }
@@ -355,11 +421,13 @@ def generate_sentence_transform(
 
     spliced = original_text[: target.start_char] + rewritten + original_text[target.end_char :]
 
-    notes = run_qc_common(meta_instruction, rewritten, min_words=2, max_words=max(80, target_words * 4))
+    notes, flags = run_qc_common(meta_instruction, rewritten, min_words=2, max_words=max(80, target_words * 4))
 
     # Documented modification-scope validation (Section 6, user instruction):
     # does the output actually stay within the length ratio this category
     # claims to target, or did it drift into a different category's territory?
+    # Always recorded via span_actual_words/span_target_words below, not
+    # just noted when it drifts -- raw distributions, not just violations.
     rewritten_words = len(rewritten.split())
     if target_words > 0 and rewritten:
         ratio = rewritten_words / target_words
@@ -391,6 +459,13 @@ def generate_sentence_transform(
         modified_spans=modified_spans, generation_config=result.generation_config,
         prompt_template_id=f"{category}_v1", target_length_words=target_words,
         qc_status=qc_status, qc_notes=notes,
+        intended_span_index=idx,
+        span_target_words=target_words,
+        span_actual_words=rewritten_words,
+        resegmentation_ok=resegmentation_ok,
+        instruction_leakage_flagged=flags["instruction_leakage"],
+        ai_self_reference_flagged=flags["ai_self_reference"],
+        semantic_preservation="not_yet_reviewed",
     )
 
 
@@ -404,33 +479,56 @@ def generate_sentence_rewrite(seed: dict, split: str) -> dict:
     )
 
 
-def generate_paragraph_rewrite(seed: dict, split: str) -> dict:
+def generate_paragraph_transform(
+    seed: dict,
+    split: str,
+    category: str,
+    instruction_template: str,
+    meta_instruction: str,
+    temperature: float,
+    expected_length_ratio_range: tuple[float, float],
+) -> dict:
+    """Regime B (surgical paragraph-level transformation) -- the
+    paragraph-granularity counterpart to generate_sentence_transform.
+    Same principle: instruction intensity (full rewrite vs. light/
+    moderate controlled) is a parameter of one mechanism, not a
+    different one, and ground truth stays exact because the mechanism
+    (splice a pre-selected paragraph) guarantees it regardless of
+    wording."""
     original_text = normalize_text(seed["full_text"])
     paragraphs = original_text.split("\n\n")
 
     idx = gu.pick_rewrite_paragraph_index(paragraphs, rng_seed=RNG_SEED)
     if idx is None:
         return make_sample_record(
-            sample_id=f"{seed['id']}__paragraph_rewrite_single",
-            family_id=seed["id"], split=split, label="ai_assisted", transformation_type="paragraph_rewrite_single",
+            sample_id=f"{seed['id']}__{category}",
+            family_id=seed["id"], split=split, label="ai_assisted", transformation_type=category,
             source_sample_id=f"{seed['id']}__human", text=None, ground_truth_confidence="high", modified_spans=None,
-            generation_config=None, prompt_template_id="paragraph_rewrite_v1", target_length_words=None,
+            generation_config=None, prompt_template_id=f"{category}_v1", target_length_words=None,
             qc_status="skipped", qc_notes=["no_suitable_paragraph_found"],
         )
 
     target_paragraph = paragraphs[idx]
-    instruction = PARAGRAPH_REWRITE_INSTRUCTION.format(target=target_paragraph)
+    target_words = len(target_paragraph.split())
+    instruction = instruction_template.format(target=target_paragraph)
 
-    max_new_tokens = gu.budget_max_new_tokens(len(target_paragraph.split()) + 10)
+    max_new_tokens = gu.budget_max_new_tokens(target_words + 10)
     gen_seed = next_gen_seed()
-    result = qwen_generate.generate(instruction, max_new_tokens=max_new_tokens, temperature=0.8, top_p=0.95, seed=gen_seed)
+    result = qwen_generate.generate(instruction, max_new_tokens=max_new_tokens, temperature=temperature, top_p=0.95, seed=gen_seed)
     rewritten_paragraph = normalize_text(result.text).strip()
+    rewritten_words = len(rewritten_paragraph.split())
 
     new_paragraphs = list(paragraphs)
     new_paragraphs[idx] = rewritten_paragraph
     spliced = "\n\n".join(new_paragraphs)
 
-    notes = run_qc_common(PARAGRAPH_REWRITE_META, rewritten_paragraph, min_words=5, max_words=max(200, len(target_paragraph.split()) * 4))
+    notes, flags = run_qc_common(meta_instruction, rewritten_paragraph, min_words=5, max_words=max(200, target_words * 4))
+
+    if target_words > 0 and rewritten_paragraph:
+        ratio = rewritten_words / target_words
+        lo, hi = expected_length_ratio_range
+        if not (lo <= ratio <= hi):
+            notes.append(f"modification_scope_drift(ratio={ratio:.2f},expected=[{lo},{hi}])")
 
     spliced_doc = parse_document(spliced)
     spliced_sentences = segment_sentences(spliced, doc=spliced_doc) if spliced_doc is not None else []
@@ -441,18 +539,43 @@ def generate_paragraph_rewrite(seed: dict, split: str) -> dict:
         for s in spliced_sentences
         if s.start_char >= char_start and s.end_char <= char_end
     ]
-    if not modified_spans:
+    # Paragraph-level "resegmentation_ok" doesn't require the same TOTAL
+    # sentence count as the original (a rephrased paragraph may
+    # legitimately combine/split its own internal sentences) -- what
+    # matters is whether the rewritten paragraph's character range still
+    # resolves to at least one real sentence in the re-parsed spliced
+    # text. If it doesn't, we cannot confidently say which sentences are
+    # AI-touched, so treat it the same as a resegmentation failure: reject.
+    resegmentation_ok = bool(modified_spans)
+    if not resegmentation_ok:
         notes.append("paragraph_span_had_no_resolvable_sentences")
 
-    qc_status = "rejected" if "empty_output" in notes else ("flagged" if notes else "passed")
+    qc_status = "rejected" if "empty_output" in notes or not resegmentation_ok else ("flagged" if notes else "passed")
 
     return make_sample_record(
-        sample_id=f"{seed['id']}__paragraph_rewrite_single",
-        family_id=seed["id"], split=split, label="ai_assisted", transformation_type="paragraph_rewrite_single",
+        sample_id=f"{seed['id']}__{category}",
+        family_id=seed["id"], split=split, label="ai_assisted", transformation_type=category,
         source_sample_id=f"{seed['id']}__human", text=spliced, ground_truth_confidence="high",
         modified_spans=modified_spans, generation_config=result.generation_config,
-        prompt_template_id="paragraph_rewrite_v1", target_length_words=len(target_paragraph.split()),
+        prompt_template_id=f"{category}_v1", target_length_words=target_words,
         qc_status=qc_status, qc_notes=notes,
+        intended_span_index=idx,
+        span_target_words=target_words,
+        span_actual_words=rewritten_words,
+        resegmentation_ok=resegmentation_ok,
+        instruction_leakage_flagged=flags["instruction_leakage"],
+        ai_self_reference_flagged=flags["ai_self_reference"],
+        semantic_preservation="not_yet_reviewed",
+    )
+
+
+def generate_paragraph_rewrite(seed: dict, split: str) -> dict:
+    """Thin wrapper: `paragraph_rewrite_single` = generate_paragraph_transform
+    with the full-rewrite instruction and a wide expected length ratio."""
+    return generate_paragraph_transform(
+        seed, split, "paragraph_rewrite_single",
+        PARAGRAPH_REWRITE_INSTRUCTION, PARAGRAPH_REWRITE_META,
+        temperature=0.8, expected_length_ratio_range=(0.3, 3.0),
     )
 
 

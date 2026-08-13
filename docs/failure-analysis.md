@@ -91,6 +91,84 @@ informal/non-standard punctuation in real student writing is a genuine
 source of segmentation disagreement worth being aware of elsewhere in the
 pipeline (e.g. Phase 3 feature extraction).
 
+### Failure 4: structural QC does not catch semantic drift at the sentence level
+
+**What was attempted:** validate that `sentence_light_controlled`/
+`sentence_moderate_controlled` samples (surgical splice, "exact ground
+truth" by construction) actually produce faithful light/moderate edits,
+using length-ratio and resegmentation checks as the quality gate.
+
+**What happened:** in EXP-DATA-001-R1-confirmation (50 records, 10
+previously-unseen seeds), manual semantic review found **4 samples that
+passed every automated check** (`qc_status: "passed"`, `resegmentation_ok:
+true`, length ratio within bounds) had still changed the essay's actual
+meaning. Concretely: `BCB916A9A9F3__sentence_moderate_controlled` altered
+a factual detail from "at least one C" to "two Cs" — a number changed,
+not just phrasing. `4C3FC32093AB__sentence_light_controlled` and its
+moderate sibling both replaced a specific grievance ("students...cant get
+involved because of their C average") with a generic, unrelated sentence
+("I think...you need to address this issue") carrying no equivalent
+claim. Combined across both sentence-level categories: 33% of reviewed
+samples were judged `"preserved"`, 47% `"changed"`.
+
+**Why it failed:** length ratio and resegmentation validate *structure*
+(did the span stay the right size, does the essay still parse into the
+same sentence count) — neither one reads the text for meaning. A rewrite
+can be the "right" length and sit in a perfectly valid sentence boundary
+while still saying something different from the original.
+
+**What changed as a result:** a `semantic_preservation` field was added
+(`not_yet_reviewed`/`preserved`/`questionable`/`changed`), populated only
+by manual human review — never by a model call, which would just move the
+same blind spot into a different opaque check. DEC-011 records
+sentence-level controlled transformation as **not ready for scale**
+pending one of: a second automated signal that can catch this, mandatory
+semantic review as a gate, or more surrounding context per edit. Full
+results: [reports/EXP-DATA-001-R1-confirmation.md](../reports/EXP-DATA-001-R1-confirmation.md).
+
+### Failure 5: structural-artifact insertion during single-sentence rewrite
+
+**What happened:** `3AF8147D6DB0__sentence_moderate_controlled` (asked to
+moderately reword one sentence) produced output beginning with
+`"Sincerely,\n\n"` — a letter-closing artifact with no relationship to
+the single-sentence instruction — before the actual reworded content.
+Passed structural QC (correct length, correct resegmentation) because
+neither check inspects content for this kind of artifact.
+
+**Why it failed:** the model appears to occasionally default to
+letter/email formatting conventions regardless of the specific,
+narrowly-scoped instruction given. Not investigated further (single
+occurrence in this round); worth watching for recurrence at larger scale.
+
+**What changed as a result:** nothing yet — recorded as a data point
+supporting Failure 4's broader conclusion (structural QC is
+insufficient), not as a separate fix. If this recurs at scale, a
+dedicated "no letter-formatting artifacts" check would be a reasonable,
+narrowly-scoped addition.
+
+### Failure 6 (a correctly-diagnosed measurement bug, not a generation problem): `difflib` `autojunk` understated similarity
+
+**What happened:** while building the family-aware near-duplicate check,
+a fixture test showed `difflib.SequenceMatcher` scoring a single-word
+change in a ~200-character sentence as ~0.28 similarity — clearly wrong
+for what's almost the same sentence. Root cause: `SequenceMatcher`'s
+default `autojunk=True` treats characters as "popular" (excluded from
+matching) once a sequence passes 200 characters.
+
+**Why this matters beyond the immediate fix:** `align_and_diff_sentences`
+(used in EXP-DATA-001 to compute Regime C's similarity range, 0.07–0.97)
+had the same unfixed default. The fix (`autojunk=False`) was applied, but
+EXP-DATA-001's specific similarity numbers were not recomputed
+retroactively — they should be read as approximate, not exact, going
+forward. The *structural* finding from that pilot (70% sentence-count
+mismatch) is unaffected, since it's a count comparison, not a similarity
+score.
+
+**What changed as a result:** `autojunk=False` added to both
+`SequenceMatcher` call sites; a regression test
+(`test_align_and_diff_sentences_does_not_understate_similarity_for_long_sentences`)
+added to `scripts/tests/test_generation_utils.py` to keep this caught.
+
 ---
 
 ## Part 2: Detector Failures

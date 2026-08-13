@@ -64,14 +64,23 @@ def align_and_diff_sentences(original_sentences: list[str], candidate_sentences:
           "pairs": [(original_sentence, candidate_sentence, similarity_ratio), ...],
         }
     similarity_ratio is difflib.SequenceMatcher's ratio() in [0, 1];
-    1.0 means identical text.
+    1.0 means identical text. `autojunk=False` is passed explicitly --
+    SequenceMatcher's default `autojunk=True` treats characters as
+    "popular" (and excludes them from matching) once a sequence exceeds
+    200 characters, which can badly understate similarity for longer
+    sentences with no actual relationship to how similar the text is.
+    Found while building near_duplicate_pairs_scoped (EXP-DATA-001-R1
+    confirmation round) -- see that function's docstring and
+    scripts/tests/test_generation_utils.py for a worked example of how
+    large the distortion can be (>0.6 ratio difference on a
+    single-word change in a ~200-character string).
     """
     if len(original_sentences) != len(candidate_sentences):
         return {"structure_drift": True, "pairs": []}
 
     pairs = []
     for orig, cand in zip(original_sentences, candidate_sentences):
-        ratio = difflib.SequenceMatcher(None, orig, cand).ratio()
+        ratio = difflib.SequenceMatcher(None, orig, cand, autojunk=False).ratio()
         pairs.append((orig, cand, ratio))
     return {"structure_drift": False, "pairs": pairs}
 
@@ -256,7 +265,18 @@ def check_instruction_artifacts(output: str) -> bool:
 def near_duplicate_pairs(texts: list[str], prefix_len: int = 80, suffix_len: int = 80) -> list[tuple[int, int]]:
     """Pairwise near-duplicate heuristic for a small list (pilot-scale --
     O(n^2) is fine at n=10). Two texts are flagged if their normalized
-    prefix+suffix+length signature matches. Returns index pairs."""
+    prefix+suffix+length signature matches. Returns index pairs.
+
+    NOTE: this flat version does not distinguish same-family from
+    cross-family similarity, and EXP-DATA-001-R1 found that matters in
+    practice -- a single-sentence surgical edit is naturally near-
+    identical to its own human original and siblings, which this
+    function correctly flags as "similar" but which isn't a real
+    duplication problem. Kept for cases where family membership doesn't
+    apply (e.g. comparing independently-generated `full_ai` samples
+    against each other, where every one is its own family). For anything
+    involving surgical-splice family members, use
+    near_duplicate_pairs_scoped instead."""
     normalized = [_WHITESPACE_RE.sub(" ", t.strip().lower()) for t in texts]
     signatures = [(t[:prefix_len], t[-suffix_len:], len(t)) for t in normalized]
     pairs = []
@@ -265,3 +285,96 @@ def near_duplicate_pairs(texts: list[str], prefix_len: int = 80, suffix_len: int
             if signatures[i] == signatures[j]:
                 pairs.append((i, j))
     return pairs
+
+
+# Similarity at/above this is treated as "near-identical" for cross-family
+# duplicate detection -- a QC calibration parameter (like the repetition-
+# ratio ceiling elsewhere in this file), not a ground-truth-determining
+# threshold. Distinct from DEC-011's rejected sentence-attribution
+# threshold: this doesn't decide which text is AI-authored, only whether
+# two *outputs* are suspiciously alike.
+NEAR_DUPLICATE_SIMILARITY_THRESHOLD = 0.9
+
+
+def near_duplicate_pairs_scoped(
+    items: list[tuple[str, str, str]],
+    exact_prefix_len: int = 80,
+    exact_suffix_len: int = 80,
+    near_similarity_threshold: float = NEAR_DUPLICATE_SIMILARITY_THRESHOLD,
+) -> dict:
+    """Family-aware near-duplicate detection.
+
+    `items` is a list of (sample_id, family_id, text).
+
+    Same-family similarity is EXPECTED, not suspicious: every sample
+    derived from one seed essay necessarily shares almost all of its text
+    with the original and with its siblings (a single-sentence surgical
+    edit changes a few dozen words out of a few hundred). Flagging that
+    as "duplication" is noise -- exactly what happened in
+    EXP-DATA-001-R1's flat near_duplicate_pairs check.
+
+    The real detection target is CROSS-family similarity: two samples
+    derived from *different* seed essays ending up near-identical would
+    indicate a genuine problem (e.g. the generation model collapsing
+    distinct prompts into similar output).
+
+    Returns:
+        {
+          "cross_family": [(sample_id_i, sample_id_j, similarity), ...],
+          "same_family": [(sample_id_i, sample_id_j, similarity), ...],
+        }
+    Only pairs at/above the near-duplicate threshold (or an exact
+    prefix/suffix/length signature match) appear in either list.
+    `cross_family` is the list to actually act on; `same_family` is
+    informational only and must never be treated as a defect.
+    """
+    normalized = [(sid, fam, _WHITESPACE_RE.sub(" ", t.strip().lower())) for sid, fam, t in items]
+
+    cross_family = []
+    same_family = []
+    for i in range(len(normalized)):
+        sid_i, fam_i, text_i = normalized[i]
+        for j in range(i + 1, len(normalized)):
+            sid_j, fam_j, text_j = normalized[j]
+
+            exact_sig_match = (
+                len(text_i) == len(text_j)
+                and text_i[:exact_prefix_len] == text_j[:exact_prefix_len]
+                and text_i[-exact_suffix_len:] == text_j[-exact_suffix_len:]
+            )
+            similarity = (
+                1.0 if exact_sig_match else difflib.SequenceMatcher(None, text_i, text_j, autojunk=False).ratio()
+            )
+
+            if exact_sig_match or similarity >= near_similarity_threshold:
+                pair = (sid_i, sid_j, round(similarity, 3))
+                (same_family if fam_i == fam_j else cross_family).append(pair)
+
+    return {"cross_family": cross_family, "same_family": same_family}
+
+
+# Semantic preservation: does a controlled rewrite change the writing
+# form/style without silently changing the author's underlying meaning or
+# claims? This is a provenance/QC field, not a ground-truth-determining
+# one -- Regime A/B's "this span is AI-authored" label is already exact
+# by construction (we chose the span). Semantic preservation instead
+# tracks whether the transformation was a *faithful* light/moderate edit,
+# which matters for how trustworthy the resulting mixed sample is as a
+# realistic simulation of "AI touched this part without changing what
+# the student was saying."
+#
+# Deliberately NOT computed by any model call in this pipeline -- doing
+# so would mean asking a language model to judge another language
+# model's output, i.e. exactly the LLM-as-ground-truth-judge pattern this
+# project avoids everywhere else (DEC-004). Values are assigned by manual
+# human review (see reports/EXP-DATA-001-R1-confirmation.md) and recorded
+# per sample; `not_yet_reviewed` is the only value this codebase ever
+# sets automatically.
+SEMANTIC_PRESERVATION_VALUES = ("not_yet_reviewed", "preserved", "questionable", "changed")
+
+
+def validate_semantic_preservation(value: str) -> bool:
+    """True if `value` is one of the recognized semantic_preservation
+    values. Used to catch typos/invalid values before they're written
+    into a sample record, not to judge the value itself."""
+    return value in SEMANTIC_PRESERVATION_VALUES
