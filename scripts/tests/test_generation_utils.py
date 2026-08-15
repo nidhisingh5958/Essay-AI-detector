@@ -10,6 +10,7 @@ from generation_utils import (
     check_instruction_artifacts,
     check_instruction_leakage,
     check_length_bounds,
+    find_family_split_violations,
     modified_sentence_indices,
     near_duplicate_pairs,
     near_duplicate_pairs_scoped,
@@ -112,6 +113,33 @@ def test_assign_family_splits_covers_all_ids_and_is_deterministic():
     assert set(split1.keys()) == set(ids)
     assert set(split1.values()) <= {"train", "validation", "test"}
     assert list(split1.values()).count("train") == 7  # 70% of 10
+
+
+def test_find_family_split_violations_empty_when_invariant_holds():
+    records = [
+        {"family_id": "A", "split": "train"},
+        {"family_id": "A", "split": "train"},
+        {"family_id": "A", "split": "train"},
+        {"family_id": "B", "split": "test"},
+        {"family_id": "B", "split": "test"},
+    ]
+    assert find_family_split_violations(records) == []
+
+
+def test_find_family_split_violations_catches_a_split_family():
+    # Regression fixture for the hard leakage invariant (DEC-011 Section
+    # 13): a family whose members ended up in different splits must be
+    # caught, not silently accepted.
+    records = [
+        {"family_id": "A", "split": "train"},
+        {"family_id": "A", "split": "test"},  # violation
+        {"family_id": "B", "split": "validation"},
+        {"family_id": "B", "split": "validation"},
+    ]
+    violations = find_family_split_violations(records)
+    assert len(violations) == 1
+    assert violations[0]["family_id"] == "A"
+    assert violations[0]["splits"] == ["test", "train"]
 
 
 def test_pick_rewrite_sentence_index_respects_word_bounds():

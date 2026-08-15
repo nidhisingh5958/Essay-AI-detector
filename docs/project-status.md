@@ -2,12 +2,17 @@
 
 ## Current Phase
 
-**Generation-methodology phase concluded with a strategic, category-
-specific decision for primary dataset construction (2026-08-13, post-R3
-review).** The primary dataset construction PLAN is now documented
-([docs/dataset.md](dataset.md)) but **NOT executed** — no large-scale
-generation has run. **Stopped for review** per explicit instruction —
-no scaling, no detector work, no EXP-003, no NLI added experimentally.
+**EXP-DATA-001-R4 (full_ai pre-scale regression) complete and clean —
+required prerequisite before 150-family primary dataset construction.**
+10 fresh seeds, `full_ai` only: 0 leakage flags, 0 self-reference flags,
+10/10 QC passed, 0 cross-family duplicates, 0 family-split-invariant
+violations, clean topic/prompt adherence on manual spot-check. No
+regression found; `full_ai` mechanism unchanged.
+[reports/EXP-DATA-001-R4-full-ai-regression.md](../reports/EXP-DATA-001-R4-full-ai-regression.md).
+**Stopped for review** per explicit instruction, as required after the
+regression check — 150-family generation has NOT started. The primary
+dataset construction plan remains documented but not executed
+([docs/dataset.md](dataset.md)).
 
 ## Completed
 
@@ -72,15 +77,30 @@ no scaling, no detector work, no EXP-003, no NLI added experimentally.
     `failure-analysis.md` (pointer to the strategic decision, evidence
     chain preserved), `decision-summary.md`, `decisions.md`, DEC-011,
     DEC-012, DEC-013.
+- [x] **EXP-DATA-001-R4 (2026-08-14) — full_ai pre-scale regression,
+      required prerequisite for 150-family construction:** 10 fresh
+      seeds, `full_ai` only. **Clean: 0 leakage flags, 0 self-reference
+      flags, 10/10 QC passed, length ratio 0.89–1.15 (median 1.08), 0
+      cross-family duplicates, 0 family-split-invariant violations
+      (verified across ALL 8 experiment data files, not just this one),
+      clean topic/prompt adherence on manual spot-check of all 10
+      essays.** No regression found; `full_ai` mechanism unchanged, as
+      instructed. New reusable utility added:
+      `generation_utils.find_family_split_violations()` (tested,
+      2 regression tests) — makes the hard leakage invariant
+      programmatically checkable, for this round and the upcoming
+      150-family build.
+      [reports/EXP-DATA-001-R4-full-ai-regression.md](../reports/EXP-DATA-001-R4-full-ai-regression.md).
 
 ## In Progress
 
-- [ ] **Stopped for review, as explicitly instructed.** Not generating
-      the primary dataset yet, not scaling to thousands of samples, not
-      training/evaluating a detector, not running EXP-003, not adding
-      NLI experimentally.
-- [ ] Primary dataset generation (per `docs/dataset.md`) — plan
-      documented, execution not authorized yet.
+- [ ] **Stopped for review, as explicitly instructed** (required after
+      the R4 regression check). 150-family generation has NOT started.
+      Not scaling to thousands of samples, not training/evaluating a
+      detector, not running EXP-003, not adding NLI experimentally.
+- [ ] 150-family primary dataset generation (per `docs/dataset.md`) —
+      plan documented, R4 prerequisite satisfied, execution not
+      authorized yet.
 - [ ] Sentence-moderate instruction redesign — 3 candidates drafted, not
       tested; not part of the primary dataset regardless.
 - [ ] A reversal-sensitive screening signal (NLI) for paragraph-level —
@@ -95,12 +115,14 @@ no scaling, no detector work, no EXP-003, no NLI added experimentally.
   paragraph/sentence experiments, 2026-08-13.
 - `EXP-DATA-001-R3` — 86 records (50 sentence-light + 36 paragraph
   claim-survival), n=25/12, two separate experiments, 2026-08-13.
+- `EXP-DATA-001-R4` — 20 records (10 human + 10 full_ai), n=10,
+  pre-scale regression check, 2026-08-14. Clean, no regression.
 
-All five are data-generation-pipeline validation experiments — the
-evidence base for the strategic decision above. None involves a
-detector; no detection accuracy/F1/generalization claim is made from
-any of them. **The primary dataset itself (`docs/dataset.md`) has not
-yet been generated.**
+All six are data-generation-pipeline validation experiments — the
+evidence base for the strategic decision above and the go/no-go check
+for scaling. None involves a detector; no detection accuracy/F1/
+generalization claim is made from any of them. **The primary dataset
+itself (`docs/dataset.md`) has not yet been generated.**
 
 ## Current Known Problems
 

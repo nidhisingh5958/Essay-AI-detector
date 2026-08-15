@@ -378,3 +378,22 @@ def validate_semantic_preservation(value: str) -> bool:
     values. Used to catch typos/invalid values before they're written
     into a sample record, not to judge the value itself."""
     return value in SEMANTIC_PRESERVATION_VALUES
+
+
+def find_family_split_violations(records: list[dict]) -> list[dict]:
+    """Hard leakage invariant (DEC-011 Section 13): every sample derived
+    from one seed essay (same family_id) must share exactly one split.
+    Returns a list of {"family_id": ..., "splits": {...}} for any family
+    that does NOT -- empty list means the invariant holds. Meant to run
+    as a real check against a generated samples.jsonl, not just trusted
+    by construction, since `split` is passed by the caller at each
+    generation call site and a refactor could silently break this."""
+    splits_by_family: dict[str, set[str]] = {}
+    for record in records:
+        splits_by_family.setdefault(record["family_id"], set()).add(record["split"])
+
+    violations = []
+    for family_id, splits in splits_by_family.items():
+        if len(splits) > 1:
+            violations.append({"family_id": family_id, "splits": sorted(splits)})
+    return violations

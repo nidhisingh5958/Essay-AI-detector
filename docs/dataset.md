@@ -4,6 +4,12 @@
 document specifies how the first primary benchmark dataset will be
 built once authorized — no generation for this dataset has started.
 Everything below is a proposal for review, not a completed action.
+**Required prerequisite satisfied 2026-08-14**: EXP-DATA-001-R4's
+full_ai pre-scale regression found no substantive issue (0 leakage
+flags, 0 self-reference flags, 10/10 QC-clean, 0 family-split
+violations, clean topic/prompt adherence) — see
+[reports/EXP-DATA-001-R4-full-ai-regression.md](../reports/EXP-DATA-001-R4-full-ai-regression.md).
+This plan itself is still not executed pending review of that result.
 
 See [final-decision-guide.md](final-decision-guide.md) for a one-page
 summary of what's in/out and why, and
@@ -15,7 +21,7 @@ Decision" section for the full reasoning this plan implements.
 | Category | Label | Mechanism | Evidence basis |
 |---|---|---|---|
 | Human original | `human` | Unmodified PERSUADE 2.0 essay | N/A — ground truth by definition |
-| Fully AI-generated | `machine` | `full_ai` (whole-essay generation, same prompt/target length) | EXP-DATA-001: 10/10 QC-clean once the `check_instruction_leakage` false-positive bug is accounted for (the 3 flagged samples were confirmed false positives, not real leakage) |
+| Fully AI-generated | `machine` | `full_ai` (whole-essay generation, same prompt/target length) | EXP-DATA-001: 10/10 QC-clean once the `check_instruction_leakage` false-positive bug is accounted for. **Re-confirmed live, EXP-DATA-001-R4 (2026-08-14, 10 fresh seeds): 0/10 leakage flags, 0/10 self-reference flags, 0 duplicates, clean topic/prompt adherence** — the fixed leakage check has now actually been exercised on a live run, closing a previously-open item |
 | Controlled sentence-light AI-assisted | `ai_assisted` | `sentence_light_controlled_v2` (surgical single-sentence splice, full-paragraph context, light-copy-edit instruction) | EXP-DATA-001-R2 (9/10 preserved, 0/10 changed) + EXP-DATA-001-R3 (22/25 preserved, 1/25 changed at 2.5x scale) — see DEC-011 |
 
 **Excluded from this dataset** (per DEC-011's Strategic Decision, not
@@ -32,9 +38,9 @@ constraints, stated explicitly rather than picked arbitrarily:
 
 1. **Pool availability**: PERSUADE 2.0's `Independent`-task subset has
    4,177 essays in this project's eligible word-count range
-   (150–320 words). 80 have already been used across every prior
-   generation experiment (EXP-DATA-001 through R3) and must be excluded
-   from this pool — see §3 — leaving 4,097 available. 150 is a small
+   (150–320 words). 90 have already been used across every prior
+   generation experiment (EXP-DATA-001 through R4) and must be excluded
+   from this pool — see §3 — leaving 4,087 available. 150 is a small
    fraction of that (3.7%), leaving ample headroom for later dataset
    revisions or a held-out generalization set without re-touching this
    pool.
@@ -85,10 +91,11 @@ essay `S` is one **family**. Every sample derived from `S` —
 `family_id = S.id`.
 
 **Seed pool**: `load_candidate_records()` filtered to `task ==
-"Independent"`, word count in `[150, 320]`, minus the 80 seed IDs
+"Independent"`, word count in `[150, 320]`, minus the 90 seed IDs
 already used across EXP-DATA-001 / R1 / R1-confirmation / R2-paragraph /
-R2-sentence / R3-sentence-light / R3-paragraph-claim-survival (exact ID
-list maintained the same way as every prior round's `EXCLUDED_SEED_IDS`
+R2-sentence / R3-sentence-light / R3-paragraph-claim-survival /
+R4-full-ai-regression (exact ID list maintained the same way as every
+prior round's `EXCLUDED_SEED_IDS`
 — hardcoded, asserted, never silently recomputed). This keeps the
 primary dataset's essays disjoint from every essay this project's
 methodology decisions were validated against, avoiding any risk that
