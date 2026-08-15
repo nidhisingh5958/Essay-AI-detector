@@ -56,10 +56,47 @@ inspection shows real but weak `ai_assisted` signal the plain-argmax
 decision rule can't yet use. Scoped to this benchmark, this generation
 model only.
 
-**FAIR-001 and GEN-001 remain DESIGNED / NOT EXECUTED**
-([FAIR-001](experiments/FAIR-001.md), [GEN-001](experiments/GEN-001.md),
-DEC-018/019) — approved execution order is EXP-003C → GEN-001 →
-FAIR-001; only EXP-003C has run so far, per the explicit stop condition.
+**GEN-001 executed 2026-08-15** (held-out cross-generator
+generalization: EXP-003A's frozen detector applied unchanged to
+Phi-3.5-mini-instruct, MIT license, revision
+`2fe192450127e6a83f7441aef6e3ca586c338b77`) — see
+[reports/GEN-001.md](../reports/GEN-001.md). Reused PRIMARY-DATASET-v1's
+23 frozen test-split human essays unmodified; generated 23 new
+Phi `full_ai` counterparts (23/23 passed QC, zero flags), stored
+separately, never merged into PRIMARY-DATASET-v1. Headline: **mixed
+transfer** — the primary (combined) and stylometric-only feature
+groups transferred essentially perfectly (identical accuracy to
+Qwen's own frozen test result, zero score-distribution overlap between
+human and Phi `full_ai`), while the LM-only feature group — already the
+weakest across three prior Qwen-only experiments — degraded further on
+Phi specifically (`full_ai` recall 100%→56.5%). The sole
+misclassification was the same family (`302DC21A6DEE`) flagged in
+three prior experiments — a pre-existing, generator-independent
+quirk, not a new Phi-related failure. DEC-004 (fourth independent data
+point against the LM feature group) and DEC-019 (execution evidence)
+updated; both remain open/Provisional, not Accepted/Rejected.
+
+**FAIR-001 executed 2026-08-15** (fairness evaluation of the
+already-frozen EXP-003A/EXP-003B detectors, no retraining) — see
+[reports/FAIR-001.md](../reports/FAIR-001.md). Applied both frozen
+detectors, unchanged (refit-reproduction verified byte-identical to
+recorded `chosen_C` values), to all 150 PRIMARY-DATASET-v1 families,
+joined against PERSUADE's `ell_status` (10 `Yes` / 132 `No` / 8
+unlabeled) and, secondarily/exploratorily, ELLIPSE's continuous
+proficiency scores (n=9). Headline: **for the working detector
+(EXP-003A), no material disparity detected** — human false-positive
+rate 0.0% (`Yes`, n=10) vs. 0.76% (`No`, n=132); AI false-negative rate
+0.0% vs. 0.0%; overlapping score distributions — explicitly bounded by
+the small `n=10` `Yes` group (rules out only a large disparity, not a
+smaller one). The near-chance EXP-003B essay-level detector produced no
+interpretable fairness signal (both groups near-ceiling FP rate,
+consistent with its own degenerate near-universal-positive behavior,
+not a subgroup effect). Zero demographic-field leakage into any
+feature file, re-verified programmatically. DEC-018 updated to
+**Provisional (executed, Category A finding)** — not marked Accepted,
+per instruction not to auto-resolve from one small-sample execution.
+This was the last item in the approved execution order (EXP-003C →
+GEN-001 → FAIR-001) — all three have now run.
 
 | ID | Decision | Chosen Approach | Main Alternative | Why |
 |----|----------|------------------|-------------------|-----|
@@ -80,7 +117,7 @@ FAIR-001; only EXP-003C has run so far, per the explicit stop condition.
 | DEC-015 | EXP-003 model selection & threshold strategy (Provisional, design-only) | L2-regularized logistic regression (primary) + random forest (secondary nonlinearity check, not auto-preferred); threshold selected on validation only, frozen before test | Deep neural network; gradient boosting as primary | 425 samples is too small for a deep model without severe overfitting; logistic regression's coefficients directly serve DEC-017's evidence-mapping requirement |
 | DEC-016 | Sentence-level localization evaluation design (Provisional, design-only) | Ground truth from exact stored `modified_spans` provenance, never inferred by similarity; precision/recall/F1/confusion matrix reported separately from essay-level metrics | Infer AI-touched sentences via diff/similarity | Diff-based sentence attribution was already rejected once (DEC-011's Post-Pilot Methodology Redesign) for being unreliable/ambiguous; exact provenance already exists in the data |
 | DEC-017 | Evidence/explanation mapping design (Provisional, design-only) | Fixed, deterministic template layer: feature value → normalized measurement → evidence statement; no generative model ever produces explanation text | Post-hoc LLM-generated natural-language explanation | Extends DEC-004's "LM is an instrument, never the judge" constraint to the explanation layer — an LLM-written explanation would be un-auditable against the actual feature values it claims to describe |
-| DEC-018 | FAIR-001 fairness evaluation methodology (Provisional, design-only) | PERSUADE `ell_status`, joined via `family_id` in a separate table; score ALL 150 families with the already-frozen model (not just the 23-family test split); small-sample threshold (n<10 → "insufficient data") fixed in advance | Only evaluate on the frozen test split; wait for an ELLIPSE-based extension | Test-split alone has only 1 `ell_status=Yes` family — meaningless for any rate comparison. Scoring all 150 (10 `Yes` total) doesn't touch model development, only reads the already-frozen model's output on more inputs |
+| DEC-018 | FAIR-001 fairness evaluation methodology (Provisional — executed 2026-08-15, Category A: no material disparity detected, underpowered) | PERSUADE `ell_status`, joined via `family_id` in a separate table; score ALL 150 families with the already-frozen model (not just the 23-family test split); small-sample threshold (n<10 → "insufficient data") fixed in advance | Only evaluate on the frozen test split; wait for an ELLIPSE-based extension | Test-split alone has only 1 `ell_status=Yes` family — meaningless for any rate comparison. Scoring all 150 (10 `Yes` total) doesn't touch model development, only reads the already-frozen model's output on more inputs |
 | DEC-019 | GEN-001 held-out generator selection (Provisional, design-only) | Phi-3.5-mini-instruct (MIT, local, free) as the held-out generator; reuse PRIMARY-DATASET-v1's existing 23 test-split human essays unmodified, generate only new `full_ai` counterparts; `full_ai` category only for this first pass | A different-size Qwen variant (rejected — not sufficiently different, same vendor/family); a hosted API model (deferred — real cost, less reproducible, revisits DEC-010's vendor-lock-in concerns) | Genuinely different vendor/corpus/architecture from Qwen while staying local/free/reproducible, matching this project's standing model-choice preference (DEC-007/010) |
 
 This table will grow through later phases (feature selection, scoring

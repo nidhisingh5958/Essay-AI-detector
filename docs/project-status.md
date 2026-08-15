@@ -2,6 +2,102 @@
 
 ## Current Phase
 
+**Research phase complete (2026-08-15). Now in FINAL AUDIT / PRODUCT
+DEFINITION phase** — see [PRODUCT-AUDIT.md](PRODUCT-AUDIT.md) for the
+full synthesis, product definition, and phased implementation plan.
+
+**Implementation Phase I — repository/security cleanup — executed
+2026-08-15** (PRODUCT-AUDIT.md §13's known finding): two git-tracked
+debug logs (`experiments/EXP-003A/extract_features.log`,
+`experiments/EXP-003B/extract_features.log`) contained only run-log
+output and one local absolute filesystem path each — no credentials.
+Untracked via `git rm --cached` (kept on disk); `.gitignore` extended
+with `experiments/**/*.log` so they can't be re-added accidentally.
+Full repository security sweep (API keys/tokens/passwords/Kaggle
+credentials/`.env` files/absolute paths/tracked model caches/tracked
+generated datasets) found nothing else. PRIMARY-DATASET-v1 checksums
+and all frozen experiment feature/results files confirmed unchanged.
+Full test suite re-run: 179/179 passing (136 scripts + 43 backend). No
+research artifact was deleted, no production code was touched.
+
+**Implementation Phase B — frozen detector integration — executed
+2026-08-15** (docs/production-detector.md has the full record). Built
+two verified inference artifacts from the already-frozen research
+results — no retraining, no new experiment:
+- **Essay-level** (`backend/app/ml/essay_detector_v1.joblib`, from
+  EXP-003A): `C=0.005994842503189409`, threshold 0.47, combined
+  29-feature group. Verified: refit `chosen_C` matches exactly, and all
+  46 frozen test-sample scores reproduce EXP-003A's recorded scores
+  within `5e-5`.
+- **Sentence-localization** (`backend/app/ml/sentence_detector_v1.joblib`,
+  from EXP-003B): `C=166.81005372000558`, ranking-only (no threshold —
+  EXP-003B's own 0.34 threshold is degenerate). Verified: refit
+  `chosen_C` matches exactly, and top-1 test localization accuracy
+  reproduces exactly (9/15, 60.0%).
+
+New production modules: `backend/app/services/feature_spec.py`
+(canonical 29-field order), `essay_feature_vector.py`,
+`sentence_feature_vectors.py` (both verified byte-equivalent to the
+research feature-computation functions by regression test), `detector.py`
+(model loading + inference, no training code), `backend/app/models/detector_results.py`.
+
+**Two items explicitly NOT invented, per instruction** — flagged as
+missing calibration decisions rather than guessed: (1) the three-state
+essay-level result banding proposed in the product audit was never
+actually calibrated by any research protocol — only the raw score and
+the single 0.47 threshold are exposed; (2) sentence-localization top-K
+was never fixed by an approved spec — `rank_sentences()` returns every
+scorable sentence, uncapped. Both deferred to Phase D.
+
+23 new tests (`backend/tests/test_detector.py` ×15,
+`test_essay_feature_vector.py` ×5, `test_sentence_feature_vectors.py`
+×3) — including exact reproduction of family `302DC21A6DEE`'s known
+borderline miss. Full backend suite: 66/66 passing. PRIMARY-DATASET-v1
+and every frozen EXP-003A/EXP-003B file checksum-verified unchanged
+before and after.
+
+**Implementation Phase C + D — sentence localization + deterministic
+evidence mapping — executed 2026-08-15** (docs/evidence-mapping.md has
+the full record). Extends Phase B's frozen artifacts — no retraining,
+no threshold change, no new features:
+- **Phase C**: `rank_sentences()` now normalizes text once internally
+  and returns the exact `normalized_text` every offset refers to
+  (fixes a real gap — Phase B's extraction functions hadn't called
+  `normalize_text` internally); adds an explicit, documented
+  deterministic tie-break (`(-score, sentence_index)`); adds a
+  1-indexed `rank` field. Offsets regression-tested against
+  punctuation, Unicode, multi-paragraph text, quotes, apostrophes,
+  whitespace, and consecutive sentences (14 tests).
+- **Phase D**: new `backend/app/services/evidence_mapper.py` —
+  deterministic feature → reference-comparison → fixed-template
+  evidence statements, zero LLM/network dependency (enforced by an
+  AST-based import-scan test, not just a claim). Model contribution =
+  `coef[i] × standardized_value[i]`, verified to sum (+ intercept) to
+  the model's own `decision_function` logit exactly. Essay-level result
+  uses the **safe two-state-plus-evidence-gated-third** model
+  (`machine_signal_detected` / `no_strong_signal_detected` at the
+  existing 0.47 threshold; `inconclusive` reserved strictly for
+  missing-evidence, never an invented score band). Sentence label is
+  always `"potentially_ai_assisted"`, never `"ai_written"`.
+- **Two items again explicitly flagged as UI defaults, not research
+  results**: `DEFAULT_TOP_K_SENTENCES = 3`, `DEFAULT_TOP_N_EVIDENCE = 3`
+  — both caller-overridable, neither tuned against any test set.
+- New reference-statistics artifact
+  (`backend/app/ml/feature_reference_stats.json`, from
+  `scripts/build_feature_reference_stats.py`) — descriptive mean/std of
+  EXP-003A's frozen human TRAIN-split feature values, not a new model.
+- 30 new tests (14 offset/ranking, 16 evidence-mapper) — including an
+  end-to-end regression check that the full production pipeline
+  reproduces EXP-003B's cached top-1 result exactly for a real essay,
+  and family `302DC21A6DEE`'s known borderline case still produces
+  honest evidence (not suppressed).
+- Full suite: **232/232 passing** (136 scripts + 96 backend).
+  PRIMARY-DATASET-v1 and every frozen EXP-003A/B/B-R1/GEN-001/FAIR-001
+  file checksum-verified unchanged before and after.
+
+**No further implementation phase has started** — Phase E (public API)
+requires separate, explicit authorization. No frontend code touched.
+
 **Status at a glance (2026-08-15):**
 
 **COMPLETED** (executed, results exist, reported):
@@ -11,18 +107,61 @@
 - EXP-003A (human vs. full_ai)
 - EXP-003B (human vs. ai_assisted — essay-level + sentence-localization)
 - EXP-003B-R1 (length/count-vs-non-length localization diagnostic)
-- **EXP-003C** (three-class: human/full_ai/ai_assisted, essay-level) — **EXECUTED / COMPLETE**
+- EXP-003C (three-class: human/full_ai/ai_assisted, essay-level) — EXECUTED / COMPLETE
+- **GEN-001** (held-out cross-generator generalization: Qwen-trained
+  detector applied unchanged to Phi-3.5-mini-instruct) — **EXECUTED /
+  COMPLETE**
+- **FAIR-001** (fairness evaluation of the already-frozen detector
+  across `ell_status` proficiency groups — no retraining) —
+  **EXECUTED / COMPLETE**
 
-**NOT YET EXECUTED** (design/protocol exists; no code run, no data
-generated, no model trained, no generator downloaded):
-- **FAIR-001 — DESIGNED / NOT EXECUTED**
-- **GEN-001 — DESIGNED / NOT EXECUTED**
-
-Per explicit instruction, FAIR-001 and GEN-001 are **not** marked
-executed or completed — only EXP-003C is. Full protocols:
+**NOT YET EXECUTED**: none currently pending from the approved
+execution order (EXP-003C → GEN-001 → FAIR-001) — all three have run.
+Full protocols:
 [experiments/EXP-003.md](experiments/EXP-003.md) §9 (executed),
-[experiments/FAIR-001.md](experiments/FAIR-001.md) (not executed),
-[experiments/GEN-001.md](experiments/GEN-001.md) (not executed).
+[experiments/FAIR-001.md](experiments/FAIR-001.md) (executed — see
+[reports/FAIR-001.md](../reports/FAIR-001.md)),
+[experiments/GEN-001.md](experiments/GEN-001.md) (executed — see
+[reports/GEN-001.md](../reports/GEN-001.md)).
+
+**FAIR-001 headline**: applied both already-frozen detectors (EXP-003A
+human-vs-`full_ai`, EXP-003B essay-level human-vs-`ai_assisted`),
+unchanged (refit-reproduction verified byte-identical to recorded
+`chosen_C` values), to all 150 PRIMARY-DATASET-v1 families, joined
+against PERSUADE `ell_status` (10 `Yes` / 132 `No` / 8 unlabeled) and,
+secondarily/exploratorily, ELLIPSE proficiency scores (n=9). **For the
+working detector (EXP-003A): no material disparity detected** — human
+false-positive rate 0.0% (`Yes`, n=10) vs. 0.76% (`No`, n=132); AI
+false-negative rate 0.0% vs. 0.0%; overlapping score distributions —
+explicitly bounded by the small `n=10` sample (rules out only a large
+disparity, ~>25–28 points, not a smaller one). The near-chance EXP-003B
+essay-level detector showed no interpretable fairness signal (both
+groups near-ceiling FP rate, consistent with its own degenerate
+near-universal-positive behavior, not a subgroup effect). Zero
+demographic-field leakage into any feature file, re-verified
+programmatically. DEC-018 updated to Provisional (executed, Category A
+finding) — not marked Accepted. 15 new tests
+(`scripts/tests/test_fair001_execution.py`).
+
+**GEN-001 headline**: Phi-3.5-mini-instruct (MIT, revision
+`2fe192450127e6a83f7441aef6e3ca586c338b77`) generated 23/23 `full_ai`
+counterparts to PRIMARY-DATASET-v1's frozen test-split human essays, all
+passing QC with zero flags. Applying EXP-003A's frozen model (refit-
+reproduction verified byte-identical) found **mixed transfer**: the
+primary (combined) and stylometric-only feature groups transferred
+essentially perfectly (97.8%/100% accuracy, matching Qwen's own frozen
+test result exactly, zero score-distribution overlap between human and
+Phi `full_ai`); the LM-only feature group — already the weakest group
+across three prior Qwen-only experiments — degraded further on Phi
+specifically (`full_ai` recall 100%→56.5%). The one classification
+error was the same family (`302DC21A6DEE`) misclassified in three prior
+experiments — a pre-existing, generator-independent quirk, not a new
+Phi-related failure. DEC-004 and DEC-019 updated with this evidence;
+neither marked Accepted/Rejected. 8 new tests added
+(`scripts/tests/test_gen001.py`). PRIMARY-DATASET-v1 unmodified
+(checksums verified before and unaffected by generation). FAIR-001,
+sentence-level three-class, NLI, and a third generator explicitly NOT
+run.
 
 **PRIMARY-DATASET-v1 approved and FROZEN (2026-08-15) as the immutable
 v1 benchmark** (150 families, 425 samples: 150 human + 148 full_ai +
@@ -459,24 +598,137 @@ versioned `PRIMARY-DATASET-v2`, not a silent edit).
   - **GEN-001, FAIR-001, sentence-level three-class, NLI, and cross-
     generator work explicitly NOT run** — stop condition, waiting for
     review.
+- [x] **GEN-001 — held-out cross-generator generalization, executed
+      once per the approved protocol (2026-08-15), immediately following
+      EXP-003C review/approval. FAIR-001 explicitly NOT run.**
+  - Generator: **Phi-3.5-mini-instruct** (MIT, revision
+    `2fe192450127e6a83f7441aef6e3ca586c338b77`), verified against the
+    HF API before download and against the loaded model's own config
+    after — both matched.
+  - Reused PRIMARY-DATASET-v1's 23 frozen test-split human essays
+    unmodified (checksums verified before generation: unchanged).
+    Generated 23 new `full_ai` counterparts, stored separately in
+    `data/generated/GEN-001/` — never merged into PRIMARY-DATASET-v1.
+  - **23/23 passed QC on first generation, zero flags** (no instruction
+    leakage, no AI self-reference, no length/repetition/artifact
+    issues).
+  - **Device/dtype infrastructure note**: plain CPU generation for this
+    3.8B-parameter model measured ~0.38 tok/s (bf16, severe memory
+    pressure) to ~0.02 tok/s (fp32, exceeds 16GB RAM) on this machine —
+    switched to Apple MPS (Metal GPU) in float16 (~2.5 tok/s) to make
+    the run practical. Same instructions/temperature/sampling — only
+    where the computation runs changed, disclosed in the report.
+  - Applied EXP-003A's **frozen** model (scaler + logistic regression +
+    threshold), refit deterministically from the exact same train
+    split/seed and **verified to reproduce EXP-003A's recorded
+    `chosen_C` values exactly** before evaluating — nothing fit, tuned,
+    or selected using Phi data anywhere.
+  - **Primary (combined) and stylometric-only feature groups: transfer
+    essentially perfect** — 45/46 (97.8%) at the frozen 0.47 threshold,
+    46/46 (100%) at 0.5, **identical to Qwen's own frozen test result**;
+    zero overlap between human and Phi `full_ai` score distributions.
+  - **LM-only feature group degrades under transfer**: `full_ai` recall
+    100% (23/23) on Qwen's own test split → **56.5% (13/23) on Phi**.
+    Feature-distribution analysis found `lm_mean_predictability_delta`
+    reverses sign relative to human between the two generators (Qwen
+    +0.079 above human, Phi −0.010 below human) — a plausible,
+    disclosed (not proven-causal) explanation.
+  - **Only 1 misclassification overall** (a human essay, family
+    `302DC21A6DEE`) — the **same family** misclassified in three prior
+    experiments (EXP-003A/B/C); a pre-existing, generator-independent
+    quirk, not a new Phi-related failure. **Zero Phi `full_ai` essays
+    misclassified** by the primary model.
+  - DEC-019 updated with this execution evidence (status stays
+    Provisional, not Accepted — single generator, single pass). DEC-004
+    updated with a fourth independent data point against the LM
+    feature group's reliability (status stays open, not Rejected).
+  - 8 new tests (`test_gen001.py`) — provenance, no-leakage, frozen-
+    checksum, split-value hygiene, feature-schema compatibility,
+    freeze-reproduction invariants; none assert a specific accuracy/F1
+    number.
+  - Full report: [reports/GEN-001.md](../reports/GEN-001.md). Raw
+    outputs: `data/generated/GEN-001/samples.jsonl`,
+    `experiments/GEN-001/features_phi.jsonl`,
+    `experiments/GEN-001/results.json`.
+  - **FAIR-001, sentence-level three-class, NLI, and a third generator
+    explicitly NOT run** — stop condition, waiting for review.
+- [x] **FAIR-001 — fairness evaluation, executed once per the approved
+      protocol (2026-08-15), immediately following GEN-001 review/
+      approval — the last item in the approved execution order.**
+  - **Not a training experiment.** Both frozen detectors (EXP-003A
+    primary combined, EXP-003B essay-level primary combined) refit-
+    reproduced (verified byte-identical `chosen_C` to recorded values:
+    `0.005994842503189409` and `21.54434690031882`) and applied
+    unchanged to all 150 PRIMARY-DATASET-v1 families.
+  - **Zero demographic-field leakage** into any feature file
+    (`gender`, `race_ethnicity`, `economically_disadvantaged`,
+    `student_disability_status`, `ell_status`), re-verified
+    programmatically across all 5 feature files this project has
+    produced — not just claimed at design time.
+  - `ell_status` distribution re-confirmed exactly matching the
+    design-phase feasibility finding: **10 `Yes` / 132 `No` / 8
+    unlabeled** across all 150 families; frozen test split alone still
+    only 1 `Yes` (confirmed insufficient on its own, as anticipated).
+  - **EXP-003A (working detector) — no material disparity detected**:
+    human false-positive rate 0.0% (`Yes`, n=10, 95% CI [0%, 27.8%])
+    vs. 0.76% (`No`, n=132, CI [0.13%, 4.17%]); AI false-negative rate
+    0.0% vs. 0.0%; score distributions overlap substantially
+    (human-score means 0.179 vs. 0.185, `full_ai`-score means 0.804 vs.
+    0.800). The one false positive in the `No` group is the same
+    recurring family (`302DC21A6DEE`, `ell_status=No`) flagged in
+    EXP-003A/B/C/GEN-001 — unrelated to proficiency status.
+  - **EXP-003B essay-level (near-chance detector) — no interpretable
+    fairness signal**: both groups near-ceiling FP rate (100% `Yes` vs.
+    95.45% `No`), consistent with this detector's own degenerate
+    near-universal-positive behavior at its frozen threshold, not a
+    subgroup effect — the scoping caveat anticipated in FAIR-001.md
+    §A.4, confirmed as it played out.
+  - **ELLIPSE secondary/exploratory analysis**: n=9 (below the n=10
+    threshold) — descriptive rows only, no correlation statistic
+    computed or claimed.
+  - **Conclusion category: A — no material disparity detected within
+    the available data**, for the working detector specifically,
+    explicitly bounded by the small `n=10` sample (rules out only a
+    large disparity, not a smaller one) — not a general fairness claim.
+  - DEC-018 updated to **Provisional (executed, Category A finding)** —
+    explicitly not marked Accepted.
+  - 15 new tests (`test_fair001_execution.py`) — threshold-rule
+    correctness, FP/FN calculation correctness, score aggregation,
+    no-leakage, reproduction-check values; none assert a specific
+    fairness outcome.
+  - Full report: [reports/FAIR-001.md](../reports/FAIR-001.md). Raw
+    outputs: `experiments/FAIR-001/scored_exp003a_all_families.jsonl`,
+    `experiments/FAIR-001/scored_exp003b_essay_all_families.jsonl`,
+    `experiments/FAIR-001/results.json`.
+  - **Another generator, sentence-level three-class, NLI, detector
+    retraining, and production/UI changes explicitly NOT run** — stop
+    condition, waiting for review.
 
 ## In Progress
 
 - [ ] **Stopped for review, as explicitly instructed** (required after
-      EXP-003C). Not running GEN-001 or FAIR-001, not downloading a
-      generator, not running sentence-level three-class, not modifying
-      PRIMARY-DATASET-v1 or the frozen test set, not adding NLI, not
-      optimizing the production application.
+      FAIR-001 — the last item in the originally-approved execution
+      order). Not running another generator, not running sentence-level
+      three-class, not modifying PRIMARY-DATASET-v1 or the frozen test
+      set, not adding NLI, not retraining the detector, not optimizing
+      the production application.
 - [ ] Whether/how to improve `ai_assisted` detection given EXP-003C's
       complete essay-level collapse (0/16) — genuinely open; the
       per-sample probability nuance (§12 of reports/EXP-003C.md)
       suggests a different decision rule or class-weighting could help,
       neither attempted nor recommended yet.
-- [ ] FAIR-001 — protocol complete (experiments/FAIR-001.md, DEC-018),
-      not executed. Anticipated to be inconclusive given n=10 subgroup
-      size — disclosed in the design, not a reason to skip running it.
-- [ ] GEN-001 — protocol complete (experiments/GEN-001.md, DEC-019),
-      not executed. No generator downloaded yet.
+- [ ] Whether a larger, more powered fairness sample (PRIMARY-DATASET-v2,
+      or a purpose-built ELLIPSE-based extension) is worth building,
+      given FAIR-001's n=10 ceiling — flagged in DEC-018's Revisit
+      When, not decided.
+- [ ] Whether to extend GEN-001 to a second held-out generator (e.g. a
+      hosted API model, DEC-019's deferred Alternative B) given the
+      mixed-transfer result — genuinely open, not decided, not
+      requested yet.
+- [ ] Whether/how to address the LM-only feature group's now four-time-
+      consistent weakness (drop it, reweight it, or investigate the
+      `predictability_delta` sign-reversal further) — flagged by
+      GEN-001, not designed or attempted.
 - [ ] Whether to add a validation-signal-strength guard to threshold
       selection (DEC-015's Revisit-When item, from EXP-003B's
       degenerate essay-level threshold) — flagged, not designed.
@@ -576,12 +828,17 @@ general AI detection.
 
 ## Decisions Pending
 
-- Authorization to execute GEN-001, next in the approved order (protocol:
-  experiments/GEN-001.md, DEC-019) — not executed, per explicit stop
-  condition after EXP-003C.
-- Authorization to execute FAIR-001 (protocol: experiments/FAIR-001.md,
-  DEC-018) — last in the approved order, anticipated inconclusive
-  given n=10 subgroup size, still worth running.
+- Whether a larger, more powered fairness sample (PRIMARY-DATASET-v2,
+  or a purpose-built ELLIPSE-based extension) is worth building, given
+  FAIR-001's n=10 ceiling — flagged in DEC-018's Revisit When, not
+  decided or requested.
+- Whether to extend GEN-001 to a second held-out generator (DEC-019's
+  deferred Alternative B, a hosted API model) given the mixed-transfer
+  result — not decided, not requested.
+- Whether/how to address the LM-only feature group's now four-time-
+  consistent weakness (EXP-003A, EXP-003B-R1, EXP-003C, GEN-001) —
+  drop it, reweight it, or investigate the `predictability_delta`
+  sign-reversal (GEN-001 §11) further — flagged, not designed.
 - Whether/how to improve `ai_assisted` detection given EXP-003C's
   complete essay-level collapse (0/16) — the per-sample probability
   nuance suggests real but weak signal the plain-argmax rule can't use;
@@ -599,26 +856,25 @@ general AI detection.
   future work.
 - A reversal-sensitive screening signal (NLI, DEC-012 Alternative B) —
   design not started, future work, explicitly not part of this phase.
-- Scoring/calibration method (Phase 6) — depends on GEN-001/FAIR-001
-  results and any `ai_assisted`-detection improvement work.
+- Scoring/calibration method (Phase 6) — depends on FAIR-001's result
+  and any `ai_assisted`-detection improvement work.
 - Passage-grouping strategy (Phase 7).
 
 ## Next Steps (pending review — not started)
 
-1. User reviews [reports/EXP-003C.md](../reports/EXP-003C.md) — the
-   three-class result, especially `ai_assisted`'s complete essay-level
-   collapse and its asymmetric confusion pattern.
-2. If approved: execute GEN-001 next (per the approved order), per its
-   already-complete design (experiments/GEN-001.md, DEC-019) — small,
-   local, free held-out generalization test, `full_ai` category only.
-3. FAIR-001 follows GEN-001 in the approved order — not blocking, but
-   not run automatically either.
-4. GEN-001's held-out evaluation uses the already-frozen EXP-003A model
-   unchanged — no refitting on the new generator's data under any
-   circumstance.
-5. Sentence-moderate redesign testing and the NLI reversal-detection
-   signal remain separate future-work tracks, not blockers for GEN-001
-   or FAIR-001.
-6. Continue to hold off on FAIR-001, GEN-001, sentence-level three-class,
-   NLI, cross-generator work beyond GEN-001's first pass, and any
-   broader accuracy/F1 claims until explicitly authorized.
+1. User reviews [reports/FAIR-001.md](../reports/FAIR-001.md) — the
+   fairness result, especially the small `n=10` sample's bound on what
+   "no material disparity detected" can actually claim.
+2. FAIR-001 was the last item in the originally-approved execution
+   order (EXP-003C → GEN-001 → FAIR-001) — **no further experiment is
+   pre-approved beyond it.** Any next step (a larger fairness sample, a
+   second held-out generator, `ai_assisted`-detection improvement,
+   sentence-level three-class, NLI) requires new, explicit
+   authorization.
+3. Sentence-moderate redesign testing and the NLI reversal-detection
+   signal remain separate future-work tracks, not blocked by anything
+   above but also not scheduled.
+4. Continue to hold off on another generator, sentence-level
+   three-class, NLI, detector retraining, PRIMARY-DATASET-v1/frozen-
+   test-set modification, and any broader accuracy/F1/fairness claims
+   until explicitly authorized.

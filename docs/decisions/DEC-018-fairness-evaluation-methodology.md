@@ -1,7 +1,9 @@
 # DEC-018 — Fairness Evaluation Methodology (FAIR-001)
 
 ## Status
-Provisional (design-only — FAIR-001 has not been executed)
+Provisional (**executed 2026-08-15** — Category A finding, no material
+disparity detected within the available data; remains Provisional, not
+Accepted, given the small `n=10` `ell_status=Yes` sample — see Evidence)
 
 ## Date
 2026-08-15
@@ -98,6 +100,34 @@ FAIR-001 itself): `ell_status` distribution across PRIMARY-DATASET-v1's
 split alone — 1 `Yes`, 22 `No`. This single finding is what drove
 Alternative B's selection over Alternative A above.
 
+**Updated 2026-08-15 — FAIR-001 executed** (see
+[reports/FAIR-001.md](../../reports/FAIR-001.md) for full results).
+Both frozen detectors (EXP-003A primary combined, EXP-003B essay-level
+primary combined) were refit-reproduced (verified byte-identical
+`chosen_C` to their recorded values) and applied, unchanged, to all
+150 families. **No demographic field leakage** into any feature file,
+re-verified programmatically (not just claimed at design time).
+
+For the working detector (EXP-003A, human vs. `full_ai`): human
+false-positive rate 0.0% (`ell_status=Yes`, n=10) vs. 0.76% (`No`,
+n=132); AI false-negative rate 0.0% vs. 0.0%. Score distributions
+overlap substantially between groups. **No material disparity
+detected** — Category A, but explicitly bounded by the small `n=10`
+`Yes` group (Wilson 95% CI up to ±27.8 points), so this rules out only
+a large disparity, not a smaller one.
+
+For the near-chance detector (EXP-003B essay-level, human vs.
+`ai_assisted`): both groups sit near-ceiling false-positive rate
+(100% `Yes` vs. 95.45% `No`) — consistent with this detector's own
+degenerate near-universal-positive behavior at its frozen threshold,
+not interpretable as a subgroup effect (the anticipated scoping caveat
+in FAIR-001.md §A.4, confirmed as it played out).
+
+A secondary, exploratory ELLIPSE proficiency-score comparison (n=9,
+below the `n=10` threshold) produced descriptive data only — no
+correlation statistic computed or claimed, per the pre-registered
+small-sample rule.
+
 ## Trade-offs
 
 Even the best available design here (n=10) is likely to produce an
@@ -126,11 +156,16 @@ about fairness, not resolved by this decision.
 
 ## Implementation
 
-Not yet implemented — FAIR-001 has not been executed. Planned: a small
-scoring script extending `run_exp003a.py`'s existing fitting/scoring
-utilities, plus a join/analysis script.
+`scripts/run_fair001_score_all.py` (Stage 1: scores all 150 families
+with the frozen EXP-003A/EXP-003B essay-level models, refit-
+reproduction verified before scoring), `scripts/run_fair001_fairness_analysis.py`
+(Stage 2: `ell_status`/ELLIPSE join, subgroup metrics, small-sample
+rule, no-leakage verification — all in a separate analysis layer, never
+merged into any feature file).
 
 ## Tests / Experiments
 
-Not yet — pending FAIR-001 execution, explicitly not authorized in this
-design phase.
+`scripts/tests/test_fair001_execution.py` (15 tests: threshold-rule
+correctness, FP/FN calculation correctness, score aggregation,
+no-demographic-leakage, subgroup-join correctness, reproduction-check
+values). FAIR-001 itself: [reports/FAIR-001.md](../../reports/FAIR-001.md).

@@ -405,12 +405,12 @@ by a concrete failure case, not just a theoretical justification.
 
 ## Part 2: Detector Failures
 
-> Status: not started. There is no trained/calibrated detector yet to
-> produce failures from (see [project-status.md](project-status.md)).
-> This part remains a placeholder for the required structure (Section
-> 15/39) — it will be populated with at least three real,
-> confidently-wrong examples once evaluation (Phase 10) has actually run,
-> never with invented ones.
+> Status: **populated 2026-08-15** from six completed experiments
+> (EXP-003A, EXP-003B, EXP-003B-R1, EXP-003C, GEN-001, FAIR-001). The
+> three cases below are drawn directly from those reports — not
+> invented, not cherry-picked to look better than they are (Section 15).
+> See [PRODUCT-AUDIT.md](PRODUCT-AUDIT.md) §1 for how these findings
+> feed into what the production system can and cannot claim.
 
 ### Required structure per failure case (Phase 11)
 
@@ -424,6 +424,100 @@ For each of at least three essays the detector confidently gets wrong:
    feature behavior, not speculation
 6. A concrete idea for how the system could improve, ideally phrased as a
    testable follow-up experiment
+
+### Failure 1 — Family `302DC21A6DEE`: a recurring false positive, independent of generator
+
+1. **Sample**: the human-written essay for family `302DC21A6DEE`
+   (PRIMARY-DATASET-v1 test split, prompt "Summer projects").
+2. **Ground truth**: `human`.
+3. **Prediction and confidence**: predicted `machine` in **four
+   separate experiments** — EXP-003A (score just above threshold),
+   EXP-003B/EXP-003C (misclassified again in the three-class model,
+   margin 0.006 — the narrowest possible call), and GEN-001 (score
+   0.49 against a 0.47 threshold, again the closest possible miss).
+   Never a confidently-wrong case in the sense of a large margin — every
+   miss is right at the decision boundary.
+4. **Feature values**: reports note this essay has elevated lexical
+   diversity relative to the typical human essay in this benchmark —
+   its `stylo_type_token_ratio`/`stylo_moving_average_ttr` sit closer to
+   the AI-generated distribution than most human essays do.
+5. **Analysis**: this is a genuine, individual-essay stylistic outlier
+   — a human writer whose vocabulary diversity happens to resemble the
+   AI-generated cluster on the specific features this detector uses —
+   not a generator-specific artifact (it recurs identically whether the
+   comparison is against Qwen or Phi generated essays in the same
+   family) and not a training-instability artifact (the same essay, the
+   same near-boundary score, across four independently-fit models).
+6. **Follow-up idea**: a testable experiment — check whether this
+   essay's topic/prompt ("Summer projects") systematically produces
+   higher lexical diversity across many human writers (a prompt effect)
+   or whether it is genuinely this one writer's individual style (an
+   essay-specific effect) by comparing its feature values against the
+   full distribution of same-prompt human essays in PERSUADE, not just
+   this benchmark's 150 families.
+
+### Failure 2 — EXP-003C's complete `ai_assisted` collapse (a systemic failure, not one essay)
+
+1. **Sample**: all 16 `ai_assisted` essays in EXP-003C's frozen test
+   split.
+2. **Ground truth**: `ai_assisted`.
+3. **Prediction and confidence**: 15/16 predicted `human`, 1/16
+   predicted `full_ai` — **zero predicted correctly**. Per-sample
+   probability inspection found the model does carry real, elevated
+   `ai_assisted` signal (~0.38–0.45 vs. a 30.2% training base rate) that
+   the plain-argmax three-class decision rule cannot convert into a
+   correct prediction, since `human`'s probability is consistently
+   still higher.
+4. **Feature values**: EXP-003C's coefficient analysis found `human`
+   and `ai_assisted` have near-mirror-opposite coefficient patterns
+   relative to `full_ai` — the model has effectively learned to
+   separate {`human`, `ai_assisted`} from {`full_ai`} as one group, with
+   no strong differentiator within that group.
+5. **Analysis**: this is not a bug or a training failure — it is
+   accurate evidence that a single-sentence surgical edit inside an
+   otherwise-human essay leaves the whole-essay stylometric feature
+   vector nearly indistinguishable from a fully human essay, given the
+   current 29-feature essay-level aggregation. The signal exists (the
+   elevated probabilities) but is too weak relative to `human`'s to win
+   under a plain-argmax rule.
+6. **Follow-up idea**: EXP-003B/B-R1 already point at the answer —
+   sentence-level localization (not essay-level aggregation) is where
+   real signal exists for this category (60% top-1 accuracy vs. ~8%
+   chance). The production system's design (§5,
+   [PRODUCT-AUDIT.md](PRODUCT-AUDIT.md)) already responds to this
+   finding by not exposing essay-level `ai_assisted` classification at
+   all, and instead using sentence-level ranking for this category.
+
+### Failure 3 — GEN-001's LM-only feature-group degradation under generator shift
+
+1. **Sample**: the 23 Phi-3.5-mini-instruct `full_ai` essays in
+   GEN-001's held-out evaluation, scored with the LM-only feature group
+   specifically (not the primary combined model, which had zero errors
+   on this set).
+2. **Ground truth**: `machine` (Phi-generated).
+3. **Prediction and confidence**: 10 of 23 misclassified as `human`
+   using the LM-only model (recall dropped from 100%, 23/23, on Qwen's
+   own test split, to 56.5%, 13/23, on Phi) — a real, generator-linked
+   degradation, not noise.
+4. **Feature values**: `lm_mean_predictability_delta` reverses sign
+   relative to human between the two generators — 0.079 above human's
+   0.061 for Qwen `full_ai`, but 0.051 (below human) for Phi `full_ai`.
+5. **Analysis**: a plausible, disclosed (not proven-causal) explanation
+   — the LM-only model's decision boundary was fit on Qwen's pattern
+   (higher delta associated with `machine`); one of its six inputs
+   moves in the opposite direction for Phi, degrading that group's
+   ability to separate the classes specifically for the new generator,
+   even though the other LM-derived features (perplexity, log-prob)
+   still point the correct direction for both generators.
+6. **Follow-up idea**: a targeted single-feature ablation (drop
+   `predictability_delta` from the LM-only group specifically, refit
+   deterministically as already-established, re-evaluate on the same
+   held-out Phi set) would isolate whether this one feature explains
+   the full degradation or only part of it — not attempted in GEN-001
+   itself (out of that experiment's approved scope), flagged as a
+   possible future diagnostic, not a production requirement (the LM
+   group is not used as the primary classifier regardless — see
+   [PRODUCT-AUDIT.md](PRODUCT-AUDIT.md) §6).
 
 ### Ground rule
 

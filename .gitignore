@@ -17,6 +17,8 @@ data/*
 *.pt
 *.bin
 *.safetensors
+*.joblib
+backend/app/ml/feature_reference_stats.json
 
 # Experiment outputs (large/generated — configs are committed, raw outputs are not)
 experiments/**/results/

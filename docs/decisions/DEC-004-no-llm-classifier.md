@@ -223,6 +223,25 @@ consistency across three independent designs is itself now a notable
 pattern, not just three individually-inconclusive data points taken in
 isolation.
 
+**Updated 2026-08-15 — GEN-001 executed** (see
+[reports/GEN-001.md](../../reports/GEN-001.md)), a **fourth**
+independent angle, and the first cross-generator one: applying
+EXP-003A's frozen model to held-out Phi-3.5-mini-instruct `full_ai`
+essays found the LM-only feature group degrades further under
+generator transfer specifically (`full_ai` recall 100%→56.5%, 23/23 on
+Qwen's own test split vs. 13/23 on Phi), while the stylometric-only and
+combined groups transferred essentially perfectly. A plausible,
+disclosed (not proven-causal) explanation: `lm_mean_predictability_delta`
+— one of the LM-only model's six inputs — sits *above* human on Qwen
+`full_ai` (0.079 vs. 0.061) but *below* human on Phi `full_ai` (0.051
+vs. 0.061), a sign reversal that would work against a decision boundary
+fit on Qwen's direction. This is now four independent findings, across
+two essay-level tasks, one sentence-level task, and one cross-generator
+task, all consistent with the LM feature group being the least reliable
+component of this detector — and the first of the four to show that
+unreliability compounding under distribution shift, not just within a
+single generator's data.
+
 ## Implementation
 
 To be added in Phase 4: `backend/app/services/language_model.py`.

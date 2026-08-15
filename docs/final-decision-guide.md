@@ -13,13 +13,23 @@ reasoning lives in [DEC-011](decisions/DEC-011-mixed-text-generation.md)'s
 [dataset.md](dataset.md); quick-reference decision table in
 [decision-summary.md](decision-summary.md).
 
-**Current phase (2026-08-15): detector EXPERIMENT DESIGN, not
-training.** [experiments/EXP-003.md](experiments/EXP-003.md) specifies
-EXP-003A (human vs. full_ai), EXP-003B (human vs. ai_assisted, essay +
-sentence-localization), and EXP-003C (three-class) — feature set
-(DEC-014), model/threshold strategy (DEC-015), localization evaluation
-(DEC-016), and evidence mapping (DEC-017) are all designed but **not
-executed**. No detector has been trained, tuned, or evaluated.
+**Current phase (2026-08-15): EXP-003A, EXP-003B, EXP-003B-R1, EXP-003C,
+GEN-001, and FAIR-001 have all executed.** See
+[project-status.md](project-status.md) for the authoritative
+completed/in-progress breakdown and [decision-summary.md](decision-summary.md)
+for headline results of each. In brief: EXP-003A (human vs. full_ai)
+reached near-perfect accuracy on stylometric features alone; EXP-003B
+(human vs. ai_assisted) found essay-level detection near-chance but
+real sentence-localization signal; EXP-003C (three-class) found
+`ai_assisted` collapses into `human`; GEN-001 (held-out
+Phi-3.5-mini-instruct) found the stylometric/combined detector
+transfers essentially perfectly across generators while the LM-only
+group degrades; **FAIR-001 (fairness evaluation of the frozen
+detector, [reports/FAIR-001.md](../reports/FAIR-001.md)) found no
+material disparity across `ell_status` groups for the working
+detector, bounded by a small `n=10` sample** — not a general fairness
+claim. No detector has been retrained or tuned as a result of any of
+these evaluations.
 
 ## Included in the primary dataset
 

@@ -1,8 +1,9 @@
 # DEC-019 — GEN-001 Held-Out Generator Selection
 
 ## Status
-Provisional (design-only — GEN-001 has not been executed, no generator
-downloaded)
+Provisional (**executed 2026-08-15** — see Evidence below; remains
+Provisional, not Accepted, per standing instruction not to auto-resolve
+decisions from a single held-out generator/single pass)
 
 ## Date
 2026-08-15
@@ -83,9 +84,25 @@ research question.
 
 ## Evidence
 
-None yet — this is a pre-registration of the generator choice and
-evaluation design, written before any download or generation happens,
-so the choice can't be adjusted reactively based on results.
+**Updated 2026-08-15 — GEN-001 executed** (see
+[reports/GEN-001.md](../../reports/GEN-001.md) for full results). Phi-
+3.5-mini-instruct (revision `2fe192450127e6a83f7441aef6e3ca586c338b77`)
+generated 23/23 `full_ai` essays, all passing QC with zero flags on
+first generation. Applying EXP-003A's frozen model (unchanged, refit-
+reproduction verified byte-identical to its recorded `chosen_C` values)
+to the held-out Phi essays found **mixed transfer**: the primary
+(combined) and stylometric-only feature groups transferred essentially
+perfectly (identical accuracy to Qwen's own frozen test result, zero
+score-distribution overlap between human and Phi `full_ai`), while the
+LM-only feature group — already the weakest, least-trusted group across
+three prior Qwen-only experiments — degraded further specifically on
+Phi (`full_ai` recall 100%→56.5%). This validates the core premise of
+Alternative C (genuinely different vendor/architecture from Qwen
+produces a real, informative test) rather than a same-family variant
+that would have begged the question. The single held-out generator
+scope limitation (Trade-offs, below) stands as originally stated — this
+result establishes generalization to Phi-3.5-mini-instruct specifically,
+not universally.
 
 ## Trade-offs
 
@@ -117,9 +134,15 @@ alone can establish (GEN-001.md §E).
 
 ## Implementation
 
-Not yet implemented — no generator downloaded, no generation run.
+`scripts/phi_generate.py` (generation wrapper), `scripts/run_gen001_generate.py`
+(Stage 1: generation), `scripts/run_gen001_features.py` (Stage 2:
+feature extraction, reuses `exp003a_extract_features.py` unchanged),
+`scripts/run_gen001_evaluate.py` (Stage 3: evaluation against the
+frozen EXP-003A model).
 
 ## Tests / Experiments
 
-Not yet — pending GEN-001 execution, explicitly not authorized in this
-design phase.
+`scripts/tests/test_gen001.py` (8 tests: provenance, no-leakage,
+frozen-dataset-checksum, split-value hygiene, feature-schema
+compatibility, and freeze-reproduction invariants). GEN-001 itself:
+[reports/GEN-001.md](../../reports/GEN-001.md).

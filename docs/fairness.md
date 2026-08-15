@@ -1,15 +1,35 @@
 # Fairness
 
-> Status: **Design only, 2026-08-15 — not executed.** A concrete
-> evaluation plan now exists (below), using PERSUADE's `ell_status`
-> field and, for a future extension, ELLIPSE's continuous proficiency
-> scores — but no fairness evaluation has been run against
-> PRIMARY-DATASET-v1 or any detector. This document is not a claim that
-> fairness has been evaluated or established; see
-> [EXP-003.md](experiments/EXP-003.md) §12 for how this fits into the
-> current detector-experiment design phase.
+> Status: **FAIR-001 executed 2026-08-15.** See
+> [reports/FAIR-001.md](../reports/FAIR-001.md) for full results —
+> summarized in "Executed result" below. The plan below (§"Concrete
+> evaluation design") is the original pre-registered design; it is kept
+> as written (not rewritten after the fact) so the actual execution can
+> be checked against what was promised in advance.
 
-## Concrete evaluation design (not yet executed)
+## Executed result (2026-08-15)
+
+Both frozen detectors (EXP-003A human-vs-`full_ai`, EXP-003B essay-level
+human-vs-`ai_assisted`) were scored, unchanged, against all 150
+PRIMARY-DATASET-v1 families, joined against PERSUADE's `ell_status`
+(primary) and ELLIPSE's continuous proficiency scores (secondary,
+n=9, exploratory only). **Finding for the working detector (EXP-003A):
+no material disparity detected** — human false-positive rate 0.0%
+(`ell_status=Yes`, n=10) vs. 0.76% (`No`, n=132); AI false-negative
+rate 0.0% vs. 0.0%; overlapping score distributions. **This is bounded,
+not a general fairness claim**: the `Yes` group's small size (n=10)
+means only a large disparity (roughly >25–28 points) could have been
+ruled out with confidence — a smaller one could exist undetected. The
+near-chance EXP-003B essay-level detector produced no interpretable
+fairness signal (both subgroups near-ceiling FP rate, consistent with
+that detector's own degenerate near-universal-positive behavior, not a
+subgroup effect). Full numbers, all subgroup tables, and the
+insufficient-data cases: [reports/FAIR-001.md](../reports/FAIR-001.md).
+No demographic field was used as a model feature anywhere — re-verified
+programmatically at execution time, not just claimed at design time
+(reports/FAIR-001.md §6).
+
+## Concrete evaluation design (as originally planned, pre-execution)
 
 **Data source**: PRIMARY-DATASET-v1's `human` records carry
 `family_id == essay_id_comp`, the same key used in the original

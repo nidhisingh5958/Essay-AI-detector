@@ -1,0 +1,308 @@
+{
+  "no_demographic_leakage_verified": true,
+  "n_families_total": 150,
+  "ell_status_distribution_all_families": {
+    "Yes": 10,
+    "No": 132,
+    "unlabeled": 8
+  },
+  "exp003a_human_false_positive_by_ell_status": {
+    "Yes": {
+      "n": 10,
+      "error_count": 0,
+      "error_rate": 0.0,
+      "score_distribution": {
+        "n": 10,
+        "mean": 0.1786,
+        "median": 0.1243,
+        "std": 0.0962,
+        "min": 0.0814,
+        "max": 0.3297
+      },
+      "sufficient_data": true,
+      "error_rate_95ci": [
+        -0.0,
+        0.2775
+      ]
+    },
+    "No": {
+      "n": 132,
+      "error_count": 1,
+      "error_rate": 0.0076,
+      "score_distribution": {
+        "n": 132,
+        "mean": 0.1846,
+        "median": 0.1738,
+        "std": 0.0898,
+        "min": 0.0131,
+        "max": 0.49
+      },
+      "sufficient_data": true,
+      "error_rate_95ci": [
+        0.0013,
+        0.0417
+      ]
+    },
+    "unlabeled": {
+      "n": 8,
+      "error_count": 0,
+      "error_rate": 0.0,
+      "score_distribution": {
+        "n": 8,
+        "mean": 0.2859,
+        "median": 0.2743,
+        "std": 0.086,
+        "min": 0.1509,
+        "max": 0.4378
+      },
+      "sufficient_data": false,
+      "error_rate_95ci": null,
+      "note": "INSUFFICIENT DATA (n=8 < 10) -- rate not to be treated as reliable"
+    }
+  },
+  "exp003a_ai_false_negative_by_ell_status": {
+    "Yes": {
+      "n": 10,
+      "error_count": 0,
+      "error_rate": 0.0,
+      "score_distribution": {
+        "n": 10,
+        "mean": 0.8037,
+        "median": 0.8257,
+        "std": 0.0587,
+        "min": 0.7164,
+        "max": 0.8722
+      },
+      "sufficient_data": true,
+      "error_rate_95ci": [
+        -0.0,
+        0.2775
+      ]
+    },
+    "No": {
+      "n": 131,
+      "error_count": 0,
+      "error_rate": 0.0,
+      "score_distribution": {
+        "n": 131,
+        "mean": 0.7995,
+        "median": 0.8116,
+        "std": 0.0702,
+        "min": 0.5649,
+        "max": 0.9187
+      },
+      "sufficient_data": true,
+      "error_rate_95ci": [
+        0.0,
+        0.0285
+      ]
+    },
+    "unlabeled": {
+      "n": 7,
+      "error_count": 0,
+      "error_rate": 0.0,
+      "score_distribution": {
+        "n": 7,
+        "mean": 0.8144,
+        "median": 0.825,
+        "std": 0.0528,
+        "min": 0.6977,
+        "max": 0.8806
+      },
+      "sufficient_data": false,
+      "error_rate_95ci": null,
+      "note": "INSUFFICIENT DATA (n=7 < 10) -- rate not to be treated as reliable"
+    }
+  },
+  "exp003b_essay_level_caveat": "EXP-003B's essay-level detector performs at near-chance level (frozen threshold 0.34 flags almost everyone ai_assisted: validation recall_machine=1.0, precision_machine=0.5). Any subgroup finding below answers 'does a near-random classifier's randomness correlate with subgroup', NOT 'does a working detector treat subgroups differently' -- these are different questions (FAIR-001.md A.4).",
+  "exp003b_human_false_positive_by_ell_status": {
+    "Yes": {
+      "n": 10,
+      "error_count": 10,
+      "error_rate": 1.0,
+      "score_distribution": {
+        "n": 10,
+        "mean": 0.4325,
+        "median": 0.4085,
+        "std": 0.0731,
+        "min": 0.3573,
+        "max": 0.606
+      },
+      "sufficient_data": true,
+      "error_rate_95ci": [
+        0.7225,
+        1.0
+      ]
+    },
+    "No": {
+      "n": 132,
+      "error_count": 126,
+      "error_rate": 0.9545,
+      "score_distribution": {
+        "n": 132,
+        "mean": 0.4524,
+        "median": 0.4602,
+        "std": 0.0629,
+        "min": 0.2874,
+        "max": 0.5853
+      },
+      "sufficient_data": true,
+      "error_rate_95ci": [
+        0.9044,
+        0.979
+      ]
+    },
+    "unlabeled": {
+      "n": 8,
+      "error_count": 8,
+      "error_rate": 1.0,
+      "score_distribution": {
+        "n": 8,
+        "mean": 0.4769,
+        "median": 0.461,
+        "std": 0.0556,
+        "min": 0.4245,
+        "max": 0.5865
+      },
+      "sufficient_data": false,
+      "error_rate_95ci": null,
+      "note": "INSUFFICIENT DATA (n=8 < 10) -- rate not to be treated as reliable"
+    }
+  },
+  "exp003b_ai_assisted_false_negative_by_ell_status": {
+    "Yes": {
+      "n": 8,
+      "error_count": 0,
+      "error_rate": 0.0,
+      "score_distribution": {
+        "n": 8,
+        "mean": 0.4514,
+        "median": 0.4184,
+        "std": 0.0732,
+        "min": 0.3803,
+        "max": 0.6123
+      },
+      "sufficient_data": false,
+      "error_rate_95ci": null,
+      "note": "INSUFFICIENT DATA (n=8 < 10) -- rate not to be treated as reliable"
+    },
+    "No": {
+      "n": 113,
+      "error_count": 2,
+      "error_rate": 0.0177,
+      "score_distribution": {
+        "n": 113,
+        "mean": 0.4706,
+        "median": 0.4771,
+        "std": 0.0612,
+        "min": 0.2969,
+        "max": 0.6073
+      },
+      "sufficient_data": true,
+      "error_rate_95ci": [
+        0.0049,
+        0.0622
+      ]
+    },
+    "unlabeled": {
+      "n": 6,
+      "error_count": 0,
+      "error_rate": 0.0,
+      "score_distribution": {
+        "n": 6,
+        "mean": 0.4535,
+        "median": 0.4415,
+        "std": 0.0281,
+        "min": 0.4245,
+        "max": 0.4978
+      },
+      "sufficient_data": false,
+      "error_rate_95ci": null,
+      "note": "INSUFFICIENT DATA (n=6 < 10) -- rate not to be treated as reliable"
+    }
+  },
+  "ellipse_secondary_analysis": {
+    "n": 9,
+    "rows": [
+      {
+        "family_id": "2FD3B620DE15",
+        "ell_status": "Yes",
+        "detector_p_machine_score": 0.1212,
+        "ellipse_overall_proficiency": 4.0
+      },
+      {
+        "family_id": "2723DB12AC00",
+        "ell_status": "Yes",
+        "detector_p_machine_score": 0.2836,
+        "ellipse_overall_proficiency": 3.5
+      },
+      {
+        "family_id": "631F9CBDFD7A",
+        "ell_status": "Yes",
+        "detector_p_machine_score": 0.1006,
+        "ellipse_overall_proficiency": 3.5
+      },
+      {
+        "family_id": "699259F14D89",
+        "ell_status": "Yes",
+        "detector_p_machine_score": 0.2394,
+        "ellipse_overall_proficiency": 4.0
+      },
+      {
+        "family_id": "05118F820085",
+        "ell_status": "Yes",
+        "detector_p_machine_score": 0.1048,
+        "ellipse_overall_proficiency": 2.5
+      },
+      {
+        "family_id": "4D23A7FA9408",
+        "ell_status": "Yes",
+        "detector_p_machine_score": 0.3297,
+        "ellipse_overall_proficiency": 2.5
+      },
+      {
+        "family_id": "C865637A034A",
+        "ell_status": "Yes",
+        "detector_p_machine_score": 0.3156,
+        "ellipse_overall_proficiency": 3.5
+      },
+      {
+        "family_id": "3BE469553D75",
+        "ell_status": "Yes",
+        "detector_p_machine_score": 0.1274,
+        "ellipse_overall_proficiency": 3.0
+      },
+      {
+        "family_id": "4.96E+11",
+        "ell_status": "Yes",
+        "detector_p_machine_score": 0.0814,
+        "ellipse_overall_proficiency": 3.0
+      }
+    ],
+    "sufficient_data": false,
+    "note": "INSUFFICIENT DATA (n=9 < 10) -- descriptive rows only, no correlation statistic computed or claimed"
+  },
+  "reproducibility": {
+    "scoring_script": "scripts/run_fair001_score_all.py",
+    "analysis_script": "scripts/run_fair001_fairness_analysis.py",
+    "exp003a_frozen_threshold": 0.47,
+    "exp003b_essay_frozen_threshold": 0.34,
+    "min_subgroup_n_threshold": 10,
+    "fairness_variable_source": "PERSUADE 2.0 ell_status (primary), ELLIPSE_Final_github.csv proficiency subscores (secondary/exploratory)",
+    "join_key": "family_id == essay_id_comp (PERSUADE) == text_id_kaggle (ELLIPSE)",
+    "demographic_fields_checked": [
+      "gender",
+      "race_ethnicity",
+      "economically_disadvantaged",
+      "student_disability_status",
+      "ell_status"
+    ],
+    "feature_files_checked_for_leakage": [
+      "experiments/EXP-003A/features.jsonl",
+      "experiments/EXP-003B/features_essay.jsonl",
+      "experiments/EXP-003B/features_sentence.jsonl",
+      "experiments/EXP-003C/features_essay.jsonl",
+      "experiments/GEN-001/features_phi.jsonl"
+    ]
+  }
+}
