@@ -200,6 +200,7 @@ def build_sentence_localization(text: str, top_k: int = DEFAULT_TOP_K_SENTENCES,
         return SentenceLocalizationResult(
             candidates=[], top_k=top_k, total_scorable_sentences=0,
             has_evidence=False, no_evidence_reason=reason, disclaimer=SENTENCE_DISCLAIMER,
+            normalized_text=ranking.normalized_text, skipped=ranking.skipped,
         )
 
     candidates = []
@@ -217,4 +218,5 @@ def build_sentence_localization(text: str, top_k: int = DEFAULT_TOP_K_SENTENCES,
     return SentenceLocalizationResult(
         candidates=candidates, top_k=top_k, total_scorable_sentences=len(ranking.ranked),
         has_evidence=True, no_evidence_reason=None, disclaimer=SENTENCE_DISCLAIMER,
+        normalized_text=ranking.normalized_text, skipped=ranking.skipped,
     )

@@ -1,6 +1,15 @@
+"use client";
+
 import { EssayInput } from "@/components/EssayInput/EssayInput";
+import { EssayViewer } from "@/components/EssayViewer/EssayViewer";
+import { Limitations } from "@/components/Limitations/Limitations";
+import { ResultsSummary } from "@/components/ResultsSummary/ResultsSummary";
+import { StatusMessage } from "@/components/StatusMessage/StatusMessage";
+import { useEssayAnalysis } from "@/lib/useEssayAnalysis";
 
 export default function Home() {
+  const analysis = useEssayAnalysis();
+
   return (
     <div className="flex flex-1 justify-center bg-zinc-50 dark:bg-black">
       <main className="flex w-full max-w-3xl flex-col gap-6 px-6 py-16">
@@ -9,20 +18,38 @@ export default function Home() {
             AI Detector for Admissions Essays
           </h1>
           <p className="text-zinc-600 dark:text-zinc-400">
-            Paste an essay to inspect measurable, sentence-level evidence about
-            its writing characteristics. This tool estimates writing
-            characteristics — it does not establish authorship.
+            Paste an essay to see measurable, sentence-level evidence about its writing
+            characteristics. This tool reports statistical patterns — it does not establish
+            authorship with certainty.
           </p>
         </header>
 
-        <EssayInput />
+        <EssayInput
+          text={analysis.text}
+          onTextChange={analysis.setText}
+          onAnalyze={analysis.analyze}
+          status={analysis.status}
+          canAnalyze={analysis.canAnalyze}
+        />
 
-        <p className="text-xs text-zinc-500 dark:text-zinc-500">
-          Project status: repository scaffold (Phase 1). Analysis is not yet
-          implemented — see{" "}
-          <code className="font-mono">docs/project-status.md</code> in the
-          repository for current progress.
-        </p>
+        {analysis.status === "analyzing" && (
+          <StatusMessage variant="loading" message="Analyzing essay…" />
+        )}
+
+        {analysis.status === "error" && analysis.error && (
+          <StatusMessage variant="error" message={analysis.error} />
+        )}
+
+        {analysis.status === "success" && analysis.result && (
+          <div className="flex flex-col gap-8">
+            <ResultsSummary essay={analysis.result.essay} />
+            <EssayViewer
+              normalizedText={analysis.result.normalized_text}
+              sentences={analysis.result.sentences}
+            />
+            <Limitations limitationNote={analysis.result.essay.limitation_note} />
+          </div>
+        )}
       </main>
     </div>
   );

@@ -1,8 +1,10 @@
 # DEC-017 — Evidence/Explanation Mapping Design
 
 ## Status
-Provisional (design-only — no explanation system has been implemented
-or run yet)
+Provisional (**implemented and running in production, 2026-08-15** —
+see Evidence/Implementation below; kept Provisional rather than
+Accepted, since template coverage and normalization strategy could
+still evolve with a future dataset version)
 
 ## Date
 2026-08-15
@@ -125,8 +127,24 @@ context"* rather than any claim the sentence is confirmed human —
 demonstrating the template design correctly avoids overclaiming even
 when applied to a low-confidence result, not just confident ones. This
 is still a small, manual proof-of-concept (4 examples total, not an
-implemented, general-purpose explanation system) — the "Implementation"
-section below remains accurate that no such system has been built.
+implemented, general-purpose explanation system) at the time it was
+written.
+
+**Updated 2026-08-15 — implemented in production (Phase D)**: the
+general-purpose version of this design now exists as real, tested code
+(`backend/app/services/evidence_mapper.py`), not just the 4 manual
+worked examples above. Verified: the contribution formula
+(coefficient times standardized value) sums, with the model intercept,
+to exactly the frozen model's own `decision_function` logit (structural
+proof, tolerance `1e-6`); determinism (identical input -> identical
+explanation, byte for byte) is test-enforced; and an AST-based scan
+confirms no code path in this module imports an LLM/network library.
+Normalization uses human-population reference statistics computed once
+from EXP-003A's frozen train split
+(`scripts/build_feature_reference_stats.py`) -- a disclosed
+implementation detail, not a contradiction of this decision's "feature
+value vs. reference range" design. See
+[evidence-mapping.md](../evidence-mapping.md) for the full record.
 
 ## Trade-offs
 
@@ -155,12 +173,17 @@ added or refined (DEC-014's Revisit When) — not automated.
 
 ## Implementation
 
-Not yet implemented — no explanation system exists yet. Depends on
-EXP-003's feature-signal results (DEC-014) to know which templates are
-worth writing first.
+`backend/app/services/evidence_mapper.py` (Phase D, 2026-08-15) —
+`_compute_contributions`, `_select_top_evidence`, `_build_evidence_item`,
+`build_essay_evidence`, `build_sentence_localization`. Reference
+statistics: `scripts/build_feature_reference_stats.py` →
+`backend/app/ml/feature_reference_stats.json`.
 
 ## Tests / Experiments
 
-Not yet — pending implementation. When built: determinism tests (same
-input → same explanation text) and a check that no code path in this
-module calls a generative model.
+`backend/tests/test_evidence_mapper.py` (16 tests) — determinism (same
+input → same explanation text, byte for byte), an AST-based scan
+confirming no code path in `evidence_mapper.py` imports an LLM/network
+library, the contribution-formula structural proof, evidence-ordering/
+selection-tie-break correctness, and the known `302DC21A6DEE`
+borderline case still producing honest (not suppressed) evidence.

@@ -95,8 +95,91 @@ no threshold change, no new features:
   PRIMARY-DATASET-v1 and every frozen EXP-003A/B/B-R1/GEN-001/FAIR-001
   file checksum-verified unchanged before and after.
 
-**No further implementation phase has started** — Phase E (public API)
-requires separate, explicit authorization. No frontend code touched.
+**Implementation Phase E — production analysis API — executed
+2026-08-15** (docs/api.md has the full record). Orchestration/
+serialization only — no new detection logic, no threshold/model change:
+- **`POST /api/analyze`** (`backend/app/api/analyze.py`), request
+  `{text: string}`, wired into the existing `backend/app/main.py` app
+  (no second entry point). Response schema
+  (`backend/app/models/api_schemas.py`) exposes essay state/score/
+  evidence, ranked sentence candidates + skipped sentences +
+  `normalized_text`, and version metadata — **never** the model's `C`,
+  raw threshold, or full feature vector (verified by test).
+- Essay states unchanged from Phase D: `machine_signal_detected` /
+  `no_strong_signal_detected` / `inconclusive` (evidence-availability
+  only, no new score band). Sentence label always
+  `"potentially_ai_assisted"`.
+- `DEFAULT_TOP_K_SENTENCES = 3` reused as-is from Phase D, not retuned.
+- Both frozen artifacts load once at FastAPI `lifespan` startup (fails
+  loudly if missing, never starts partially-loaded) and are reused for
+  every request (verified: same object across calls). `GET /api/health`
+  now reports `detector_loaded` without ever running inference.
+- Errors: 422 (empty/malformed text), 413 (exceeds the existing 20,000-
+  char limit — not a new arbitrary maximum), 503 (artifact unavailable
+  mid-process), 500 (unexpected — no stack trace/paths leaked, verified
+  by test). No case returns a fabricated analysis.
+- Determinism verified: identical text → identical response except
+  `analysis_id` (an explicit, documented non-analysis identifier).
+- Performance measured (not optimized): health ~2ms; first request
+  ~2.9s (cold spaCy/distilgpt2 load); warm short essay ~63ms;
+  representative ~1,576-char/23-sentence essay ~330ms warm. No caching
+  added — not required by these numbers.
+- Privacy: essay text processed in memory only, never persisted; only
+  text length is logged, never content.
+- 27 new tests (`test_api_analyze.py`) — including the frozen
+  `302DC21A6DEE` regression case reproduced exactly via the API, and a
+  no-LLM/no-research-import AST-based scan.
+- Full suite: **259/259 passing** (136 scripts + 123 backend).
+  PRIMARY-DATASET-v1 and every frozen experiment file (EXP-003A/B/B-R1/
+  C, GEN-001, FAIR-001) checksum-verified unchanged before and after.
+
+**Implementation Phase F — frontend integration — executed 2026-08-15**
+(docs/frontend.md has the full record). Turns the Phase 1 landing-page
+scaffold into a complete analysis experience against the frozen Phase E
+API — no detector/feature/evidence/threshold/research code touched:
+- New: `lib/api.ts` (the sole `fetch` call in the app),
+  `lib/useEssayAnalysis.ts` (explicit idle/validating/analyzing/success/
+  error state model), `lib/textOffsets.ts`, `types/api.ts` (types
+  mirroring the backend schema exactly). New components:
+  `ResultsSummary`, `EssayViewer` (+ `EvidencePanel`, reused for both
+  essay- and sentence-level evidence), `Limitations`, `StatusMessage`.
+  Rewrote `EssayInput` as a controlled component (was a permanently-
+  disabled Phase 1 stub) and `app/page.tsx` as the orchestrator.
+- **Essay-level state always shown as text** (never color-only): three
+  states unchanged from Phase D/E. Raw score, when shown, is always
+  labeled "Detector score... not a probability that AI wrote this
+  essay" — never a bare "% AI" figure (test-enforced).
+- **A real cross-language offset bug was caught and fixed before it
+  shipped**: the backend's `char_start`/`char_end` are Python (Unicode
+  code point) indices; naive JS `.slice()` diverges from these for any
+  astral character (most emoji), since JS strings are UTF-16-code-unit
+  indexed. `lib/textOffsets.ts` slices via `Array.from()` throughout to
+  stay correct — verified against a real API response fixture
+  containing an emoji.
+- Sentence label always `"potentially_ai_assisted"` display text
+  "Potentially AI-assisted passage" — never an authorship-certainty
+  claim. Skipped sentences are reported, never hidden.
+- No research statistics (97.8%, 86.7%, etc.) appear anywhere in the UI
+  — test-enforced.
+- **No frontend test framework existed before this phase** (a gap
+  PRODUCT-AUDIT.md §17 had flagged) — added Vitest + React Testing
+  Library. 46 new tests across 7 files, using **real captured API
+  response fixtures** (not hand-written mocks). Production build
+  (`next build`) succeeds; ESLint clean.
+- End-to-end smoke-verified: both dev servers started, a real `curl`
+  POST to `/api/analyze` with the frontend's `Origin` header confirmed
+  CORS and the full response shape match what the components expect.
+  No interactive browser session was available in this environment for
+  manual click-through — disclosed explicitly, not claimed.
+- Full suite: **305/305 passing** (136 scripts + 123 backend + 46
+  frontend). PRIMARY-DATASET-v1, every frozen experiment file, and all
+  three model/reference-stats artifacts checksum-verified unchanged
+  before and after.
+
+**No further work has been authorized beyond Phase F** — deployment,
+final polish, performance optimization, additional experiments, a third
+generator, NLI, and retraining all remain explicitly out of scope until
+separately authorized.
 
 **Status at a glance (2026-08-15):**
 

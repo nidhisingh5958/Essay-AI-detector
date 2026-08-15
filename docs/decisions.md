@@ -33,7 +33,7 @@ Consequences, Revisit When, Implementation, Tests/Experiments.
 | [DEC-014](decisions/DEC-014-exp003-feature-set-and-baselines.md) | EXP-003 feature set and baseline definitions | Provisional — validated by EXP-003A/B (stylometric-only reached the observed performance; LM group added no measurable value) |
 | [DEC-015](decisions/DEC-015-exp003-model-selection-and-threshold-strategy.md) | EXP-003 primary model selection and threshold-selection strategy | Provisional — validated, with a real degenerate-threshold risk documented (EXP-003B essay-level) |
 | [DEC-016](decisions/DEC-016-sentence-localization-evaluation.md) | Sentence-level localization evaluation design | Provisional — design validated (EXP-003B/B-R1); detection performance still weak |
-| [DEC-017](decisions/DEC-017-evidence-explanation-mapping.md) | Evidence/explanation mapping design | Provisional — first real worked examples applied (EXP-003A/B), cautious-language design held up |
+| [DEC-017](decisions/DEC-017-evidence-explanation-mapping.md) | Evidence/explanation mapping design | Provisional — implemented and running in production (Phase D, `evidence_mapper.py`); contribution-formula and no-LLM-dependency claims test-verified |
 | [DEC-018](decisions/DEC-018-fairness-evaluation-methodology.md) | FAIR-001 fairness evaluation methodology | Provisional — executed 2026-08-15: Category A, no material disparity detected (underpowered at n=10) |
 | [DEC-019](decisions/DEC-019-gen001-generator-selection.md) | GEN-001 held-out generator selection | Provisional — executed 2026-08-15: mixed transfer (primary/stylometric near-perfect, LM-only degraded on Phi) |
 

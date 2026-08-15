@@ -1,7 +1,10 @@
 # DEC-014 — EXP-003 Feature Set and Baseline Definitions
 
 ## Status
-Provisional (design-only — no experiment has run yet)
+Provisional (validated across four experiments — EXP-003A, EXP-003B-R1,
+EXP-003C, GEN-001 — and implemented in production, `feature_spec.py`;
+kept Provisional since the LM feature group's lack of demonstrated
+value is a consistent finding, not yet acted on by dropping it)
 
 ## Date
 2026-08-15
@@ -115,8 +118,19 @@ features, per explicit instruction.
 features) 100.0%. The stylometric-vs-LM comparison this decision exists
 to enable produced a clear, honestly-reported answer for this task:
 stylometry alone already saturates performance, and the LM group adds
-nothing measurable. EXP-003B (human vs. `ai_assisted`) has not yet run
-and may show a different balance — see DEC-004's Revisit When.
+nothing measurable.
+
+**Updated 2026-08-15 — EXP-003B-R1, EXP-003C, GEN-001 all executed**:
+the same pattern held across every subsequent design — EXP-003B-R1
+(sentence-level localization: genuine LM-predictability features
+weakest of 5 groups tested), EXP-003C (three-class: stylometric-only
+and combined tied exactly on validation), GEN-001 (LM-only degraded
+under cross-generator transfer while stylometric-only/combined
+transferred perfectly). This feature set is now the one frozen into
+production (`backend/app/services/feature_spec.py`,
+`essay_detector_v1.joblib`, `sentence_detector_v1.joblib`) — see
+[production-detector.md](../production-detector.md). See DEC-004's
+Evidence section for the full four-experiment record.
 
 Originally: none yet — this is a pre-registration of the feature set
 and baselines, written before EXP-003 runs, specifically so the
@@ -153,13 +167,18 @@ DEC-015 prefers simple, regularized models for this round.
 
 ## Implementation
 
-Not yet implemented — EXP-003 has not run. Feature computation code
-already exists: `backend/app/services/feature_extractor.py`,
+`backend/app/services/feature_spec.py` (the canonical 29-field
+name/order spec, Phase B) — the frozen production artifacts
+(`essay_detector_v1.joblib`, `sentence_detector_v1.joblib`) both use
+exactly this feature set. Underlying feature computation:
+`backend/app/services/feature_extractor.py`,
 `backend/app/services/language_model.py`.
 
 ## Tests / Experiments
 
-Existing: `backend/tests/test_feature_extractor.py`,
+`backend/tests/test_feature_extractor.py`,
 `backend/tests/test_language_model.py` (feature computation
-correctness, not detection signal). Signal validation: EXP-003 (not yet
-run).
+correctness), `backend/tests/test_essay_feature_vector.py` /
+`test_sentence_feature_vectors.py` (production feature-vector
+equivalence to the research computation). Signal validation:
+EXP-003A/B/B-R1/C, GEN-001 (see Evidence above).

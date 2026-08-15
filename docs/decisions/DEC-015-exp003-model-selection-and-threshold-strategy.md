@@ -1,7 +1,10 @@
 # DEC-015 — EXP-003 Primary Model Selection and Threshold-Selection Strategy
 
 ## Status
-Provisional (design-only — no model has been trained yet)
+Provisional (validated by EXP-003A/B/C and GEN-001, frozen into
+production — see [production-detector.md](../production-detector.md);
+kept Provisional per the degenerate-threshold risk documented below,
+not yet resolved)
 
 ## Date
 2026-08-15
@@ -204,9 +207,19 @@ resolved by this decision.
 
 ## Implementation
 
-Not yet implemented — EXP-003 has not run.
+`scripts/build_essay_detector_artifact.py` /
+`build_sentence_detector_artifact.py` (Phase B/C) — deterministically
+reproduce (not retrain) EXP-003A's/EXP-003B's frozen
+`LogisticRegressionCV` fits and serialize them for production use
+(`backend/app/services/detector.py`). The essay-level frozen threshold
+(0.47) is used exactly as selected; the sentence-level model is used in
+ranking mode only, explicitly never via its own degenerate raw
+threshold (0.34) — see [production-detector.md](../production-detector.md).
 
 ## Tests / Experiments
 
-Not yet — pending EXP-003 execution, explicitly not authorized in this
-phase.
+`scripts/run_exp003a.py` / `run_exp003b.py` / `run_exp003c.py` (the
+original model-fitting/threshold-selection runs);
+`backend/tests/test_detector.py` (production reproduction: refit
+`chosen_C` and every frozen test-sample score match the recorded
+research results exactly, within `5e-5`).

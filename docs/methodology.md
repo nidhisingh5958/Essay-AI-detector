@@ -1,27 +1,28 @@
 # Methodology
 
-> Status: Phase 3 (linguistic features) and Phase 4 (LM instrumentation)
-> are implemented (see [project-status.md](project-status.md)). The
-> human corpus needed for Section 5 (reference distributions) has now
-> been acquired, live-license-verified, and inspected — see
-> [dataset.md](dataset.md) and
-> [reports/dataset-inspection.md](../reports/dataset-inspection.md).
-> **EXP-003A (2026-08-15,
-> [reports/EXP-003A.md](../reports/EXP-003A.md)) gave Section 3/4's
-> features their first real signal measurement**: on the human-vs-
-> full_ai task, Phase 3's stylometric features (§3 below) separate the
-> two classes almost perfectly (test: 45–46/46), while Phase 4's LM-
-> derived features (§4 below) added no measurable improvement over
-> stylometry alone — directly confirming, not just anticipating, this
-> section's own standing warning that low perplexity must not be
-> assumed to mean "AI." This result is scoped to one human corpus and
-> one generation model (see EXP-003A's limitations) and to the easier
-> whole-essay case — EXP-003B (human vs. mixed/`ai_assisted`) has not
-> yet run and may show a different balance. No reference distribution,
-> scoring, or calibration beyond EXP-003A's own frozen logistic-
-> regression fit exists yet, so sections 5–10 below remain otherwise
-> unwritten. Sections 3–4 are filled in; treat the rest as reserved
-> structure, not implemented behavior.
+> Status: **executed, 2026-08-15.** Sections 3–4 below (feature
+> engineering, LM instrumentation) describe implemented, unchanged-since-
+> Phase-4 code. What was "reserved structure" below at the time of
+> writing is now implemented: reference distributions/scoring/
+> calibration (EXP-003A/B/C's frozen logistic regression models, see
+> [production-detector.md](production-detector.md)), sentence/passage-
+> level analysis (EXP-003B/B-R1's sentence-localization model, see
+> [evidence-mapping.md](evidence-mapping.md)), uncertainty handling (the
+> `inconclusive` essay state, reserved strictly for missing-evidence
+> conditions — see evidence-mapping.md §"Essay-level result states"),
+> and evaluation methodology (all six experiment reports — see
+> [decision-summary.md](decision-summary.md) for the quick-reference
+> summary of each). **The core finding this section anticipated was
+> confirmed empirically, repeatedly**: stylometric features (§3) carry
+> essentially all of the measured signal; the LM-derived features (§4)
+> have not demonstrated incremental value across four independent
+> experimental designs (EXP-003A, EXP-003B-R1, EXP-003C, GEN-001) — see
+> [decisions/DEC-004-no-llm-classifier.md](decisions/DEC-004-no-llm-classifier.md)'s
+> Evidence section for the full, updated record. This section's own
+> content (§3/§4) is not rewritten below — it already correctly
+> described what the system measures; only the status header and the
+> "remaining planned sections" list at the bottom are updated to reflect
+> what has since been built.
 
 ## 3. Feature engineering (Phase 3 — implemented, provisional)
 
@@ -99,24 +100,20 @@ Once implemented, this document must clearly separate:
 It must never claim that a measurement or inference *proves* authorship.
 Writing style is evidence, not proof.
 
-## Remaining planned sections (to be written in the phases noted)
+## Where each originally-planned section ended up
 
-1. Problem formulation — Phase 6 (what "detection" means here: a
-   calibrated estimate over writing characteristics, not an authorship
-   proof)
-2. Hypotheses driving feature selection — ongoing (recorded per-feature in
-   `experiments/`, not asserted here without an experiment behind it; see
-   DEC-006 for the Phase 3 starting hypotheses)
-5. Reference-distribution construction — Phase 5
-6. Scoring and calibration — Phase 6
-7. Sentence-level and passage-level analysis — Phase 7
-8. Mixed/AI-polished text handling — Phase 7
-9. Uncertainty handling ("insufficient evidence" as a valid output) —
-   Phase 6
-10. Evaluation methodology (metrics, splits, what counts as "correct") —
-    Phase 10
+| Planned section | Status | Where it actually lives |
+|---|---|---|
+| 1. Problem formulation | Done | [PRODUCT-AUDIT.md](PRODUCT-AUDIT.md) §4 ("Final product claim") — a calibrated statistical signal, explicitly not an authorship proof |
+| 2. Hypotheses driving feature selection | Done, ongoing | [decisions/DEC-006-phase3-feature-scope.md](decisions/DEC-006-phase3-feature-scope.md) (starting hypotheses) + [decisions/DEC-014-exp003-feature-set-and-baselines.md](decisions/DEC-014-exp003-feature-set-and-baselines.md) (pre-registered feature groups) |
+| 5. Reference-distribution construction | Done | EXP-003A's frozen train-split fit ([reports/EXP-003A.md](../reports/EXP-003A.md)); human-reference feature statistics specifically in `scripts/build_feature_reference_stats.py` / `backend/app/ml/feature_reference_stats.json` |
+| 6. Scoring and calibration | Done | [production-detector.md](production-detector.md) — the frozen essay-level logistic regression + 0.47 threshold |
+| 7. Sentence-level and passage-level analysis | Done | [reports/EXP-003B.md](../reports/EXP-003B.md), [reports/EXP-003B-R1.md](../reports/EXP-003B-R1.md), [evidence-mapping.md](evidence-mapping.md) (ranking, not per-sentence threshold) |
+| 8. Mixed/AI-polished text handling | Investigated, found unreliable at essay level | [reports/EXP-003C.md](../reports/EXP-003C.md) (`ai_assisted` essay-level collapse) — not exposed as a production classifier; only sentence-level candidates are surfaced |
+| 9. Uncertainty handling | Done | The `inconclusive` essay-level state (evidence-availability trigger only, never an invented score band) — [evidence-mapping.md](evidence-mapping.md) |
+| 10. Evaluation methodology | Done | [decision-summary.md](decision-summary.md) (quick reference) and each `reports/EXP-*.md` / `reports/GEN-001.md` / `reports/FAIR-001.md` (full detail) |
 
-Each of these sections will cite the specific `experiments/EXP-XXX/` run
-that justifies the choice made, per [decisions.md](decisions.md)'s
-traceability requirement — not written from first-principles reasoning
-alone.
+Every choice above cites the specific `experiments/EXP-XXX/` (or
+`GEN-001`/`FAIR-001`) run that justifies it, per
+[decisions.md](decisions.md)'s traceability requirement — none were
+decided from first-principles reasoning alone.

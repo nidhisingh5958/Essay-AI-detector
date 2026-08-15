@@ -1,0 +1,148 @@
+{
+  "analysis_id": "f520a154-fb63-41f6-ad5d-a1cb745fd1f4",
+  "normalized_text": "L'élève a écrit un essai. Il fait très beau aujourd'hui à Montréal. Emoji test: 😀 works too.",
+  "essay": {
+    "state": "machine_signal_detected",
+    "score": 0.7882,
+    "state_explanation": "This score reflects the detector's learned distinction between the human-written and AI-generated essays in its reference data (PRIMARY-DATASET-v1, EXP-003A) -- it is not a universal probability that AI wrote this specific essay.",
+    "evidence": [
+      {
+        "feature": "stylo_rare_word_ratio",
+        "human_label": "use of uncommon words",
+        "observed_value": 0.3571,
+        "reference_mean": 0.0055,
+        "reference_std": 0.0095,
+        "direction": "higher",
+        "contribution": 2.564349,
+        "statement": "This shows a higher level of use of uncommon words than the reference range used by the detector (observed 0.357 vs. a human-reference average of 0.006)."
+      },
+      {
+        "feature": "stylo_type_token_ratio",
+        "human_label": "vocabulary diversity",
+        "observed_value": 1.0,
+        "reference_mean": 0.4637,
+        "reference_std": 0.0659,
+        "direction": "higher",
+        "contribution": 0.550515,
+        "statement": "This shows a higher level of vocabulary diversity than the reference range used by the detector (observed 1.000 vs. a human-reference average of 0.464)."
+      },
+      {
+        "feature": "stylo_mean_adj_ratio",
+        "human_label": "proportion of adjectives",
+        "observed_value": 0.0,
+        "reference_mean": 0.0547,
+        "reference_std": 0.0219,
+        "direction": "lower",
+        "contribution": -0.393382,
+        "statement": "This shows a lower level of proportion of adjectives than the reference range used by the detector (observed 0.000 vs. a human-reference average of 0.055)."
+      }
+    ],
+    "limitation_note": "This result is scoped to full-essay AI generation as tested against this detector's reference data (PERSUADE-derived human essays; Qwen2.5-1.5B-Instruct and Phi-3.5-mini-instruct generated essays). It does not assess lighter AI assistance or editing, and does not establish authorship with certainty."
+  },
+  "sentences": {
+    "candidates": [
+      {
+        "sentence_index": 1,
+        "rank": 1,
+        "text": "Il fait très beau aujourd'hui à Montréal.",
+        "char_start": 26,
+        "char_end": 67,
+        "score": 0.0007,
+        "label": "potentially_ai_assisted",
+        "evidence": [
+          {
+            "feature": "stylo_mean_char_count",
+            "human_label": "average characters per sentence",
+            "observed_value": 23.0,
+            "reference_mean": 84.7492,
+            "reference_std": 27.3433,
+            "direction": "lower",
+            "contribution": -2.777391,
+            "statement": "This shows a lower level of average characters per sentence than the reference range used by the detector (observed 23.000 vs. a human-reference average of 84.749)."
+          },
+          {
+            "feature": "stylo_sentence_length_mean",
+            "human_label": "average sentence length",
+            "observed_value": 4.6667,
+            "reference_mean": 20.2055,
+            "reference_std": 7.0603,
+            "direction": "lower",
+            "contribution": -2.594949,
+            "statement": "This shows a lower level of average sentence length than the reference range used by the detector (observed 4.667 vs. a human-reference average of 20.206)."
+          },
+          {
+            "feature": "stylo_sentence_length_std",
+            "human_label": "variation in sentence length",
+            "observed_value": 0.9428,
+            "reference_mean": 9.8844,
+            "reference_std": 5.0264,
+            "direction": "lower",
+            "contribution": 2.280534,
+            "statement": "This shows a lower level of variation in sentence length than the reference range used by the detector (observed 0.943 vs. a human-reference average of 9.884)."
+          }
+        ]
+      },
+      {
+        "sentence_index": 2,
+        "rank": 2,
+        "text": "Emoji test: 😀 works too.",
+        "char_start": 68,
+        "char_end": 92,
+        "score": 0.0,
+        "label": "potentially_ai_assisted",
+        "evidence": [
+          {
+            "feature": "lm_mean_perplexity",
+            "human_label": "perplexity under the language-model instrument",
+            "observed_value": 1118.9477,
+            "reference_mean": 138.3854,
+            "reference_std": 774.217,
+            "direction": "higher",
+            "contribution": -13.379415,
+            "statement": "This shows a higher level of perplexity under the language-model instrument than the reference range used by the detector (observed 1118.948 vs. a human-reference average of 138.385)."
+          },
+          {
+            "feature": "stylo_mean_char_count",
+            "human_label": "average characters per sentence",
+            "observed_value": 17.0,
+            "reference_mean": 84.7492,
+            "reference_std": 27.3433,
+            "direction": "lower",
+            "contribution": -3.086769,
+            "statement": "This shows a lower level of average characters per sentence than the reference range used by the detector (observed 17.000 vs. a human-reference average of 84.749)."
+          },
+          {
+            "feature": "lm_mean_token_count",
+            "human_label": "average token count (a length measure, not a predictability measure)",
+            "observed_value": 8.0,
+            "reference_mean": 22.1474,
+            "reference_std": 7.4679,
+            "direction": "lower",
+            "contribution": 2.713582,
+            "statement": "This shows a lower level of average token count (a length measure, not a predictability measure) than the reference range used by the detector (observed 8.000 vs. a human-reference average of 22.147)."
+          }
+        ]
+      }
+    ],
+    "skipped": [
+      {
+        "sentence_index": 0,
+        "text": "L'élève a écrit un essai.",
+        "char_start": 0,
+        "char_end": 25,
+        "reason": "missing features: ('lm_mean_predictability_delta',)"
+      }
+    ],
+    "top_k": 3,
+    "total_scorable_sentences": 2,
+    "has_evidence": true,
+    "no_evidence_reason": null,
+    "disclaimer": "The highlighted passages indicate statistical patterns associated with the detector's reference data. They are not proof that AI wrote the passage."
+  },
+  "metadata": {
+    "essay_model_version": "essay-detector-v1-2026-08-15",
+    "essay_source_experiment": "EXP-003A",
+    "sentence_model_version": "sentence-detector-v1-2026-08-15",
+    "sentence_source_experiment": "EXP-003B"
+  }
+}

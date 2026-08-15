@@ -148,9 +148,19 @@ categories needs its own localization design.
 
 ## Implementation
 
-Not yet implemented — EXP-003B has not run. Ground-truth field already
-exists: `modified_spans` in `data/generated/PRIMARY-DATASET-v1/samples.jsonl`.
+`scripts/exp003_data_prep.py::build_sentence_localization_labels`
+(exact `modified_spans` provenance labeling, EXP-003B/B-R1). Production:
+`scripts/build_sentence_detector_artifact.py` and
+`backend/app/services/detector.py::rank_sentences` — the frozen
+sentence-localization model, used strictly for ranking (never a raw
+per-sentence threshold), per this decision's evaluation-design intent.
 
 ## Tests / Experiments
 
-Not yet — pending EXP-003B execution.
+`scripts/tests/test_exp003_data_prep.py` (label-construction
+correctness, provenance-only ground truth). `reports/EXP-003B.md`,
+`reports/EXP-003B-R1.md` (the evaluation runs this decision governs).
+Production reproduction: `backend/tests/test_detector.py`'s
+`test_sentence_artifact_reproduces_recorded_top1_localization_test_accuracy`,
+`backend/tests/test_sentence_ranking_offsets.py`'s end-to-end
+regression check.

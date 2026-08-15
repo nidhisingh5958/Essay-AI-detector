@@ -70,7 +70,13 @@ class SentenceLocalizationResult:
     threshold -- Phase C item 2) and attaches evidence to each surfaced
     candidate. `top_k` is always recorded on the result so it's visible
     downstream that this is a configurable presentation setting, not a
-    fixed model property."""
+    fixed model property.
+
+    `normalized_text` and `skipped` are passed through unchanged from
+    the single underlying `rank_sentences()` call this result was built
+    from (never a second, separate call) -- so a caller (the API layer)
+    never needs to re-run sentence ranking just to report offsets or
+    skipped sentences."""
 
     candidates: list[SentenceEvidenceResult]
     top_k: int
@@ -78,3 +84,5 @@ class SentenceLocalizationResult:
     has_evidence: bool
     no_evidence_reason: str | None  # set only when has_evidence is False
     disclaimer: str
+    normalized_text: str
+    skipped: list  # list[SkippedSentence] (from app.models.detector_results) -- passed through as-is
