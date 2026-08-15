@@ -20,6 +20,7 @@ data/*
 
 # Experiment outputs (large/generated — configs are committed, raw outputs are not)
 experiments/**/results/
+experiments/**/*.log
 reports/*
 !reports/.gitkeep
 !reports/*.md
