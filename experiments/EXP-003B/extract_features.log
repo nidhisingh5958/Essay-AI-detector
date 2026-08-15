@@ -1,0 +1,11 @@
+=== Essay-level feature extraction ===
+Reusing 150 cached human essay feature vectors from EXP-003A
+human essays: 150, ai_assisted essays: 127
+Resuming: 277 already written
+Wrote essay-level features to /Volumes/DevSSD/Developer/apply_tasks/AI-detector/experiments/EXP-003B/features_essay.jsonl
+
+=== Sentence-level (localization) feature extraction ===
+ai_assisted essays for localization: 127
+Resuming: 127 essays already processed
+Wrote sentence-level features to /Volumes/DevSSD/Developer/apply_tasks/AI-detector/experiments/EXP-003B/features_sentence.jsonl
+Sentences seen this run: 0, excluded for missing predictability_delta: 0

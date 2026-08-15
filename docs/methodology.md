@@ -5,10 +5,23 @@
 > human corpus needed for Section 5 (reference distributions) has now
 > been acquired, live-license-verified, and inspected — see
 > [dataset.md](dataset.md) and
-> [reports/dataset-inspection.md](../reports/dataset-inspection.md) — but
-> no reference distribution, scoring, or calibration exists yet, so
-> sections 5–10 below remain unwritten. Sections 3–4 are filled in; treat
-> the rest as reserved structure, not implemented behavior.
+> [reports/dataset-inspection.md](../reports/dataset-inspection.md).
+> **EXP-003A (2026-08-15,
+> [reports/EXP-003A.md](../reports/EXP-003A.md)) gave Section 3/4's
+> features their first real signal measurement**: on the human-vs-
+> full_ai task, Phase 3's stylometric features (§3 below) separate the
+> two classes almost perfectly (test: 45–46/46), while Phase 4's LM-
+> derived features (§4 below) added no measurable improvement over
+> stylometry alone — directly confirming, not just anticipating, this
+> section's own standing warning that low perplexity must not be
+> assumed to mean "AI." This result is scoped to one human corpus and
+> one generation model (see EXP-003A's limitations) and to the easier
+> whole-essay case — EXP-003B (human vs. mixed/`ai_assisted`) has not
+> yet run and may show a different balance. No reference distribution,
+> scoring, or calibration beyond EXP-003A's own frozen logistic-
+> regression fit exists yet, so sections 5–10 below remain otherwise
+> unwritten. Sections 3–4 are filled in; treat the rest as reserved
+> structure, not implemented behavior.
 
 ## 3. Feature engineering (Phase 3 — implemented, provisional)
 
@@ -53,11 +66,19 @@ direct measurement of "AI-ness." A low perplexity sentence is one
 distilgpt2 finds unsurprising — that could mean simple/formulaic phrasing
 (human or AI), a topic the model's training data covered well, or genuine
 machine generation. Section 6A's explicit warning — "Do not assume low
-perplexity = AI" — applies fully here. Turning these numbers into a
-classification requires comparing them against reference distributions
-built from labeled data (Phase 5/6), which does not exist yet. As with
-Phase 3's features, this feature category is provisional until EXP-003
-measures its actual signal.
+perplexity = AI" — applies fully here, and is now directly evidenced,
+not just anticipated: EXP-003A (2026-08-15,
+[reports/EXP-003A.md](../reports/EXP-003A.md)) found this feature
+category added no measurable improvement over Phase 3's stylometric
+features on the human-vs-full_ai task — an LM-only model reached 79.5%
+validation accuracy vs. stylometric-only's 100%, and adding these
+features to the stylometric set changed nothing. Turning these numbers
+into a classification requires comparing them against reference
+distributions built from labeled data (Phase 5/6) — EXP-003A's frozen
+logistic-regression fit is a first, narrow instance of this, not yet a
+general reference distribution. Whether this feature category earns a
+place in the eventual detector depends on EXP-003B's harder mixed-text
+task (not yet run) — see DEC-004's "Revisit When."
 
 A sentence whose only tokens fall in a context-free position (only
 possible for a very short first sentence of the whole essay) has no

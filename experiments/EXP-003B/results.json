@@ -1,0 +1,3254 @@
+{
+  "essay_level": {
+    "label_name": "essay_level_human_vs_ai_assisted",
+    "n_total": 277,
+    "split_counts": {
+      "train": 195,
+      "validation": 43,
+      "test": 39
+    },
+    "class_balance": {
+      "train": {
+        "ai_assisted": 90,
+        "other": 105
+      },
+      "validation": {
+        "ai_assisted": 21,
+        "other": 22
+      },
+      "test": {
+        "ai_assisted": 16,
+        "other": 23
+      }
+    },
+    "baseline_A_majority": {
+      "majority_class_is_positive": false,
+      "validation": {
+        "n": 43,
+        "correct": 22,
+        "accuracy": 0.5116279069767442,
+        "confusion_matrix": {
+          "tn": 22,
+          "fp": 0,
+          "fn": 21,
+          "tp": 0
+        }
+      },
+      "test": {
+        "n": 39,
+        "correct": 23,
+        "accuracy": 0.5897435897435898,
+        "confusion_matrix": {
+          "tn": 23,
+          "fp": 0,
+          "fn": 16,
+          "tp": 0
+        }
+      }
+    },
+    "baseline_B_stylometric_only": {
+      "n_features": 23,
+      "chosen_C": 21.54434690031882,
+      "validation_at_0.5": {
+        "threshold": 0.5,
+        "n": 43,
+        "correct": 22,
+        "accuracy": 0.5116279069767442,
+        "precision_machine": 0.5,
+        "recall_machine": 0.19047619047619047,
+        "f1_machine": 0.27586206896551724,
+        "precision_human": 0.5142857142857142,
+        "recall_human": 0.8181818181818182,
+        "f1_human": 0.631578947368421,
+        "confusion_matrix": {
+          "tn": 18,
+          "fp": 4,
+          "fn": 17,
+          "tp": 4
+        }
+      }
+    },
+    "baseline_C_lm_only": {
+      "n_features": 6,
+      "chosen_C": 21.54434690031882,
+      "validation_at_0.5": {
+        "threshold": 0.5,
+        "n": 43,
+        "correct": 22,
+        "accuracy": 0.5116279069767442,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.5116279069767442,
+        "recall_human": 1.0,
+        "f1_human": 0.676923076923077,
+        "confusion_matrix": {
+          "tn": 22,
+          "fp": 0,
+          "fn": 21,
+          "tp": 0
+        }
+      }
+    },
+    "primary_combined_logreg": {
+      "n_features": 29,
+      "chosen_C": 21.54434690031882,
+      "validation_at_0.5": {
+        "threshold": 0.5,
+        "n": 43,
+        "correct": 23,
+        "accuracy": 0.5348837209302325,
+        "precision_machine": 0.5454545454545454,
+        "recall_machine": 0.2857142857142857,
+        "f1_machine": 0.375,
+        "precision_human": 0.53125,
+        "recall_human": 0.7727272727272727,
+        "f1_human": 0.6296296296296297,
+        "confusion_matrix": {
+          "tn": 17,
+          "fp": 5,
+          "fn": 15,
+          "tp": 6
+        }
+      }
+    },
+    "secondary_random_forest": {
+      "config": {
+        "n_estimators": 200,
+        "max_depth": 5
+      },
+      "validation_at_0.5": {
+        "threshold": 0.5,
+        "n": 43,
+        "correct": 21,
+        "accuracy": 0.4883720930232558,
+        "precision_machine": 0.4666666666666667,
+        "recall_machine": 0.3333333333333333,
+        "f1_machine": 0.3888888888888889,
+        "precision_human": 0.5,
+        "recall_human": 0.6363636363636364,
+        "f1_human": 0.56,
+        "confusion_matrix": {
+          "tn": 14,
+          "fp": 8,
+          "fn": 14,
+          "tp": 7
+        }
+      }
+    },
+    "threshold_selection": {
+      "candidate_procedure": "sweep threshold 0.01-0.99 in 0.01 steps, maximize F1 (positive class = full_ai) on VALIDATION",
+      "chosen_threshold": 0.34,
+      "chosen_threshold_validation_f1": 0.6667,
+      "default_threshold_0.5_validation_metrics": {
+        "threshold": 0.5,
+        "n": 43,
+        "correct": 23,
+        "accuracy": 0.5348837209302325,
+        "precision_machine": 0.5454545454545454,
+        "recall_machine": 0.2857142857142857,
+        "f1_machine": 0.375,
+        "precision_human": 0.53125,
+        "recall_human": 0.7727272727272727,
+        "f1_human": 0.6296296296296297,
+        "confusion_matrix": {
+          "tn": 17,
+          "fp": 5,
+          "fn": 15,
+          "tp": 6
+        }
+      },
+      "chosen_threshold_validation_metrics": {
+        "threshold": 0.34,
+        "n": 43,
+        "correct": 22,
+        "accuracy": 0.5116279069767442,
+        "precision_machine": 0.5,
+        "recall_machine": 1.0,
+        "f1_machine": 0.6666666666666666,
+        "precision_human": 1.0,
+        "recall_human": 0.045454545454545456,
+        "f1_human": 0.08695652173913043,
+        "confusion_matrix": {
+          "tn": 1,
+          "fp": 21,
+          "fn": 0,
+          "tp": 21
+        }
+      }
+    },
+    "test_evaluation": {
+      "note": "SINGLE evaluation, performed once, after freeze.",
+      "metrics_at_frozen_threshold": {
+        "threshold": 0.34,
+        "n": 39,
+        "correct": 18,
+        "accuracy": 0.46153846153846156,
+        "precision_machine": 0.42857142857142855,
+        "recall_machine": 0.9375,
+        "f1_machine": 0.5882352941176471,
+        "precision_human": 0.75,
+        "recall_human": 0.13043478260869565,
+        "f1_human": 0.2222222222222222,
+        "confusion_matrix": {
+          "tn": 3,
+          "fp": 20,
+          "fn": 1,
+          "tp": 15
+        }
+      },
+      "metrics_at_0.5_for_reference_only": {
+        "threshold": 0.5,
+        "n": 39,
+        "correct": 25,
+        "accuracy": 0.6410256410256411,
+        "precision_machine": 0.625,
+        "recall_machine": 0.3125,
+        "f1_machine": 0.4166666666666667,
+        "precision_human": 0.6451612903225806,
+        "recall_human": 0.8695652173913043,
+        "f1_human": 0.7407407407407407,
+        "confusion_matrix": {
+          "tn": 20,
+          "fp": 3,
+          "fn": 11,
+          "tp": 5
+        }
+      }
+    },
+    "test_predictions": [
+      {
+        "sample_id": "1E9F7661E8EA__human",
+        "family_id": "1E9F7661E8EA",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.4919,
+        "correct": false
+      },
+      {
+        "sample_id": "20D2723ED2DB__human",
+        "family_id": "20D2723ED2DB",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.4488,
+        "correct": false
+      },
+      {
+        "sample_id": "2723DB12AC00__human",
+        "family_id": "2723DB12AC00",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.4585,
+        "correct": false
+      },
+      {
+        "sample_id": "2874CC27310F__human",
+        "family_id": "2874CC27310F",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.358,
+        "correct": false
+      },
+      {
+        "sample_id": "302DC21A6DEE__human",
+        "family_id": "302DC21A6DEE",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.5803,
+        "correct": false
+      },
+      {
+        "sample_id": "4943FDD99039__human",
+        "family_id": "4943FDD99039",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.4095,
+        "correct": false
+      },
+      {
+        "sample_id": "5E1DC9D62201__human",
+        "family_id": "5E1DC9D62201",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.4047,
+        "correct": false
+      },
+      {
+        "sample_id": "6B933220124E__human",
+        "family_id": "6B933220124E",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.487,
+        "correct": false
+      },
+      {
+        "sample_id": "6C54BA5C90F9__human",
+        "family_id": "6C54BA5C90F9",
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.2928,
+        "correct": true
+      },
+      {
+        "sample_id": "7185FB63F21B__human",
+        "family_id": "7185FB63F21B",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.4732,
+        "correct": false
+      },
+      {
+        "sample_id": "78A7721BE775__human",
+        "family_id": "78A7721BE775",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.4979,
+        "correct": false
+      },
+      {
+        "sample_id": "8DA0993625FF__human",
+        "family_id": "8DA0993625FF",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.408,
+        "correct": false
+      },
+      {
+        "sample_id": "9662807AD672__human",
+        "family_id": "9662807AD672",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.5314,
+        "correct": false
+      },
+      {
+        "sample_id": "9B3DE2166927__human",
+        "family_id": "9B3DE2166927",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.433,
+        "correct": false
+      },
+      {
+        "sample_id": "9FEEF0F10C42__human",
+        "family_id": "9FEEF0F10C42",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.4032,
+        "correct": false
+      },
+      {
+        "sample_id": "BEE1B9179E2C__human",
+        "family_id": "BEE1B9179E2C",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.3674,
+        "correct": false
+      },
+      {
+        "sample_id": "CBB4595ECAB7__human",
+        "family_id": "CBB4595ECAB7",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.3959,
+        "correct": false
+      },
+      {
+        "sample_id": "D5F7178E3FB1__human",
+        "family_id": "D5F7178E3FB1",
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.3183,
+        "correct": true
+      },
+      {
+        "sample_id": "E7CBE8FEFCDF__human",
+        "family_id": "E7CBE8FEFCDF",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.4776,
+        "correct": false
+      },
+      {
+        "sample_id": "ECF63F6AB48E__human",
+        "family_id": "ECF63F6AB48E",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.5637,
+        "correct": false
+      },
+      {
+        "sample_id": "EE6826C8E470__human",
+        "family_id": "EE6826C8E470",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.4416,
+        "correct": false
+      },
+      {
+        "sample_id": "EE6DDAF8FD20__human",
+        "family_id": "EE6DDAF8FD20",
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.467,
+        "correct": false
+      },
+      {
+        "sample_id": "F53DA3118668__human",
+        "family_id": "F53DA3118668",
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.2874,
+        "correct": true
+      },
+      {
+        "sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.4718,
+        "correct": true
+      },
+      {
+        "sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.3655,
+        "correct": true
+      },
+      {
+        "sample_id": "302DC21A6DEE__sentence_light_controlled_v2",
+        "family_id": "302DC21A6DEE",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.5997,
+        "correct": true
+      },
+      {
+        "sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.4132,
+        "correct": true
+      },
+      {
+        "sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.4961,
+        "correct": true
+      },
+      {
+        "sample_id": "6C54BA5C90F9__sentence_light_controlled_v2",
+        "family_id": "6C54BA5C90F9",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.346,
+        "correct": true
+      },
+      {
+        "sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.4762,
+        "correct": true
+      },
+      {
+        "sample_id": "78A7721BE775__sentence_light_controlled_v2",
+        "family_id": "78A7721BE775",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.5144,
+        "correct": true
+      },
+      {
+        "sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.5523,
+        "correct": true
+      },
+      {
+        "sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.4359,
+        "correct": true
+      },
+      {
+        "sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.3801,
+        "correct": true
+      },
+      {
+        "sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.4808,
+        "correct": true
+      },
+      {
+        "sample_id": "ECF63F6AB48E__sentence_light_controlled_v2",
+        "family_id": "ECF63F6AB48E",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.5934,
+        "correct": true
+      },
+      {
+        "sample_id": "EE6826C8E470__sentence_light_controlled_v2",
+        "family_id": "EE6826C8E470",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.4754,
+        "correct": true
+      },
+      {
+        "sample_id": "EE6DDAF8FD20__sentence_light_controlled_v2",
+        "family_id": "EE6DDAF8FD20",
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.5163,
+        "correct": true
+      },
+      {
+        "sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "true_label": "ai_assisted",
+        "predicted_positive": false,
+        "true_positive_class": true,
+        "score": 0.2969,
+        "correct": false
+      }
+    ],
+    "feature_ablation_train_validation_only": {
+      "all_29_features": {
+        "n_features": 29,
+        "chosen_C": 21.54434690031882,
+        "validation_at_0.5": {
+          "threshold": 0.5,
+          "n": 43,
+          "correct": 23,
+          "accuracy": 0.5348837209302325,
+          "precision_machine": 0.5454545454545454,
+          "recall_machine": 0.2857142857142857,
+          "f1_machine": 0.375,
+          "precision_human": 0.53125,
+          "recall_human": 0.7727272727272727,
+          "f1_human": 0.6296296296296297,
+          "confusion_matrix": {
+            "tn": 17,
+            "fp": 5,
+            "fn": 15,
+            "tp": 6
+          }
+        }
+      },
+      "stylometric_only_23": {
+        "n_features": 23,
+        "chosen_C": 21.54434690031882,
+        "validation_at_0.5": {
+          "threshold": 0.5,
+          "n": 43,
+          "correct": 22,
+          "accuracy": 0.5116279069767442,
+          "precision_machine": 0.5,
+          "recall_machine": 0.19047619047619047,
+          "f1_machine": 0.27586206896551724,
+          "precision_human": 0.5142857142857142,
+          "recall_human": 0.8181818181818182,
+          "f1_human": 0.631578947368421,
+          "confusion_matrix": {
+            "tn": 18,
+            "fp": 4,
+            "fn": 17,
+            "tp": 4
+          }
+        }
+      },
+      "lm_only_6": {
+        "n_features": 6,
+        "chosen_C": 21.54434690031882,
+        "validation_at_0.5": {
+          "threshold": 0.5,
+          "n": 43,
+          "correct": 22,
+          "accuracy": 0.5116279069767442,
+          "precision_machine": 0.0,
+          "recall_machine": 0.0,
+          "f1_machine": 0.0,
+          "precision_human": 0.5116279069767442,
+          "recall_human": 1.0,
+          "f1_human": 0.676923076923077,
+          "confusion_matrix": {
+            "tn": 22,
+            "fp": 0,
+            "fn": 21,
+            "tp": 0
+          }
+        }
+      },
+      "combined_minus_lm_within_sentence_5": {
+        "n_features": 24,
+        "chosen_C": 21.54434690031882,
+        "validation_at_0.5": {
+          "threshold": 0.5,
+          "n": 43,
+          "correct": 22,
+          "accuracy": 0.5116279069767442,
+          "precision_machine": 0.5,
+          "recall_machine": 0.19047619047619047,
+          "f1_machine": 0.27586206896551724,
+          "precision_human": 0.5142857142857142,
+          "recall_human": 0.8181818181818182,
+          "f1_human": 0.631578947368421,
+          "confusion_matrix": {
+            "tn": 18,
+            "fp": 4,
+            "fn": 17,
+            "tp": 4
+          }
+        }
+      },
+      "combined_minus_neighboring_sentence_predictability_1": {
+        "n_features": 28,
+        "chosen_C": 166.81005372000558,
+        "validation_at_0.5": {
+          "threshold": 0.5,
+          "n": 43,
+          "correct": 21,
+          "accuracy": 0.4883720930232558,
+          "precision_machine": 0.45454545454545453,
+          "recall_machine": 0.23809523809523808,
+          "f1_machine": 0.3125,
+          "precision_human": 0.5,
+          "recall_human": 0.7272727272727273,
+          "f1_human": 0.5925925925925926,
+          "confusion_matrix": {
+            "tn": 16,
+            "fp": 6,
+            "fn": 16,
+            "tp": 5
+          }
+        }
+      }
+    },
+    "primary_model_coefficients": [
+      {
+        "feature": "stylo_sentence_length_mean",
+        "standardized_coefficient": 0.3693
+      },
+      {
+        "feature": "stylo_mean_word_count",
+        "standardized_coefficient": 0.3693
+      },
+      {
+        "feature": "lm_mean_token_count",
+        "standardized_coefficient": -0.3618
+      },
+      {
+        "feature": "stylo_type_token_ratio",
+        "standardized_coefficient": 0.2679
+      },
+      {
+        "feature": "stylo_mean_avg_word_length",
+        "standardized_coefficient": 0.2105
+      },
+      {
+        "feature": "stylo_sentence_length_std",
+        "standardized_coefficient": -0.1739
+      },
+      {
+        "feature": "stylo_sentence_count",
+        "standardized_coefficient": 0.1678
+      },
+      {
+        "feature": "stylo_mean_char_count",
+        "standardized_coefficient": -0.1529
+      },
+      {
+        "feature": "lm_mean_mean_log_prob",
+        "standardized_coefficient": 0.1443
+      },
+      {
+        "feature": "stylo_sentence_length_cv",
+        "standardized_coefficient": 0.1183
+      },
+      {
+        "feature": "stylo_mean_pronoun_ratio",
+        "standardized_coefficient": 0.1126
+      },
+      {
+        "feature": "stylo_mean_adv_ratio",
+        "standardized_coefficient": -0.1079
+      },
+      {
+        "feature": "stylo_repeated_bigram_ratio",
+        "standardized_coefficient": 0.0933
+      },
+      {
+        "feature": "stylo_repeated_trigram_ratio",
+        "standardized_coefficient": -0.0825
+      },
+      {
+        "feature": "stylo_short_sentence_ratio",
+        "standardized_coefficient": -0.0794
+      },
+      {
+        "feature": "stylo_mean_noun_ratio",
+        "standardized_coefficient": -0.0773
+      },
+      {
+        "feature": "stylo_repeated_sentence_opening_ratio",
+        "standardized_coefficient": -0.0763
+      },
+      {
+        "feature": "stylo_mean_dependency_depth",
+        "standardized_coefficient": -0.0708
+      },
+      {
+        "feature": "lm_mean_log_prob_variance",
+        "standardized_coefficient": 0.0689
+      },
+      {
+        "feature": "stylo_long_sentence_ratio",
+        "standardized_coefficient": 0.0544
+      },
+      {
+        "feature": "stylo_mean_verb_ratio",
+        "standardized_coefficient": 0.0445
+      },
+      {
+        "feature": "stylo_mean_adj_ratio",
+        "standardized_coefficient": 0.0385
+      },
+      {
+        "feature": "stylo_mean_punctuation_count",
+        "standardized_coefficient": 0.0364
+      },
+      {
+        "feature": "lm_mean_perplexity",
+        "standardized_coefficient": 0.0254
+      },
+      {
+        "feature": "stylo_moving_average_ttr",
+        "standardized_coefficient": -0.0184
+      },
+      {
+        "feature": "lm_mean_predictability_delta",
+        "standardized_coefficient": -0.0175
+      },
+      {
+        "feature": "lm_mean_median_log_prob",
+        "standardized_coefficient": -0.0128
+      },
+      {
+        "feature": "stylo_rare_word_ratio",
+        "standardized_coefficient": 0.0115
+      },
+      {
+        "feature": "stylo_medium_sentence_ratio",
+        "standardized_coefficient": -0.0037
+      }
+    ]
+  },
+  "sentence_level": {
+    "label_name": "sentence_level_localization",
+    "n_total": 1578,
+    "split_counts": {
+      "train": 1117,
+      "validation": 264,
+      "test": 197
+    },
+    "class_balance": {
+      "train": {
+        "ai_assisted": 84,
+        "other": 1033
+      },
+      "validation": {
+        "ai_assisted": 20,
+        "other": 244
+      },
+      "test": {
+        "ai_assisted": 15,
+        "other": 182
+      }
+    },
+    "baseline_A_majority": {
+      "majority_class_is_positive": false,
+      "validation": {
+        "n": 264,
+        "correct": 244,
+        "accuracy": 0.9242424242424242,
+        "confusion_matrix": {
+          "tn": 244,
+          "fp": 0,
+          "fn": 20,
+          "tp": 0
+        }
+      },
+      "test": {
+        "n": 197,
+        "correct": 182,
+        "accuracy": 0.9238578680203046,
+        "confusion_matrix": {
+          "tn": 182,
+          "fp": 0,
+          "fn": 15,
+          "tp": 0
+        }
+      }
+    },
+    "baseline_B_stylometric_only": {
+      "n_features": 23,
+      "chosen_C": 21.54434690031882,
+      "validation_at_0.5": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 244,
+        "accuracy": 0.9242424242424242,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9242424242424242,
+        "recall_human": 1.0,
+        "f1_human": 0.9606299212598425,
+        "confusion_matrix": {
+          "tn": 244,
+          "fp": 0,
+          "fn": 20,
+          "tp": 0
+        }
+      }
+    },
+    "baseline_C_lm_only": {
+      "n_features": 6,
+      "chosen_C": 0.0001,
+      "validation_at_0.5": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 244,
+        "accuracy": 0.9242424242424242,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9242424242424242,
+        "recall_human": 1.0,
+        "f1_human": 0.9606299212598425,
+        "confusion_matrix": {
+          "tn": 244,
+          "fp": 0,
+          "fn": 20,
+          "tp": 0
+        }
+      }
+    },
+    "primary_combined_logreg": {
+      "n_features": 29,
+      "chosen_C": 166.81005372000558,
+      "validation_at_0.5": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 243,
+        "accuracy": 0.9204545454545454,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9239543726235742,
+        "recall_human": 0.9959016393442623,
+        "f1_human": 0.9585798816568047,
+        "confusion_matrix": {
+          "tn": 243,
+          "fp": 1,
+          "fn": 20,
+          "tp": 0
+        }
+      }
+    },
+    "secondary_random_forest": {
+      "config": {
+        "n_estimators": 200,
+        "max_depth": 5
+      },
+      "validation_at_0.5": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 244,
+        "accuracy": 0.9242424242424242,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9242424242424242,
+        "recall_human": 1.0,
+        "f1_human": 0.9606299212598425,
+        "confusion_matrix": {
+          "tn": 244,
+          "fp": 0,
+          "fn": 20,
+          "tp": 0
+        }
+      }
+    },
+    "threshold_selection": {
+      "candidate_procedure": "sweep threshold 0.01-0.99 in 0.01 steps, maximize F1 (positive class = full_ai) on VALIDATION",
+      "chosen_threshold": 0.06,
+      "chosen_threshold_validation_f1": 0.2645,
+      "default_threshold_0.5_validation_metrics": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 243,
+        "accuracy": 0.9204545454545454,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9239543726235742,
+        "recall_human": 0.9959016393442623,
+        "f1_human": 0.9585798816568047,
+        "confusion_matrix": {
+          "tn": 243,
+          "fp": 1,
+          "fn": 20,
+          "tp": 0
+        }
+      },
+      "chosen_threshold_validation_metrics": {
+        "threshold": 0.060000000000000005,
+        "n": 264,
+        "correct": 175,
+        "accuracy": 0.6628787878787878,
+        "precision_machine": 0.15841584158415842,
+        "recall_machine": 0.8,
+        "f1_machine": 0.2644628099173554,
+        "precision_human": 0.9754601226993865,
+        "recall_human": 0.6516393442622951,
+        "f1_human": 0.7813267813267813,
+        "confusion_matrix": {
+          "tn": 159,
+          "fp": 85,
+          "fn": 4,
+          "tp": 16
+        }
+      }
+    },
+    "test_evaluation": {
+      "note": "SINGLE evaluation, performed once, after freeze.",
+      "metrics_at_frozen_threshold": {
+        "threshold": 0.06,
+        "n": 197,
+        "correct": 134,
+        "accuracy": 0.6802030456852792,
+        "precision_machine": 0.17567567567567569,
+        "recall_machine": 0.8666666666666667,
+        "f1_machine": 0.29213483146067415,
+        "precision_human": 0.983739837398374,
+        "recall_human": 0.6648351648351648,
+        "f1_human": 0.7934426229508197,
+        "confusion_matrix": {
+          "tn": 121,
+          "fp": 61,
+          "fn": 2,
+          "tp": 13
+        }
+      },
+      "metrics_at_0.5_for_reference_only": {
+        "threshold": 0.5,
+        "n": 197,
+        "correct": 183,
+        "accuracy": 0.9289340101522843,
+        "precision_machine": 0.5714285714285714,
+        "recall_machine": 0.26666666666666666,
+        "f1_machine": 0.36363636363636365,
+        "precision_human": 0.9421052631578948,
+        "recall_human": 0.9835164835164835,
+        "f1_human": 0.9623655913978495,
+        "confusion_matrix": {
+          "tn": 179,
+          "fp": 3,
+          "fn": 11,
+          "tp": 4
+        }
+      }
+    },
+    "test_predictions": [
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0466,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0155,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0013,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 4,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.2042,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0228,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0479,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0082,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0329,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0001,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 10,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0162,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 11,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0075,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 12,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0149,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 13,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0248,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 14,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0218,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 15,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0436,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 16,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0001,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2723DB12AC00__sentence_light_controlled_v2",
+        "family_id": "2723DB12AC00",
+        "sentence_index": 17,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0471,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0299,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1068,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 3,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.2331,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0585,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1084,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0538,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0364,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0828,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0087,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 10,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0737,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 11,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0365,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 12,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0349,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 13,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1114,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 14,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0566,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 15,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1144,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 16,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0722,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "2874CC27310F__sentence_light_controlled_v2",
+        "family_id": "2874CC27310F",
+        "sentence_index": 17,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.027,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "302DC21A6DEE__sentence_light_controlled_v2",
+        "family_id": "302DC21A6DEE",
+        "sentence_index": 1,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.8363,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "302DC21A6DEE__sentence_light_controlled_v2",
+        "family_id": "302DC21A6DEE",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.3409,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "302DC21A6DEE__sentence_light_controlled_v2",
+        "family_id": "302DC21A6DEE",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.5635,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "302DC21A6DEE__sentence_light_controlled_v2",
+        "family_id": "302DC21A6DEE",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.5377,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "302DC21A6DEE__sentence_light_controlled_v2",
+        "family_id": "302DC21A6DEE",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.213,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "302DC21A6DEE__sentence_light_controlled_v2",
+        "family_id": "302DC21A6DEE",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.5,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "302DC21A6DEE__sentence_light_controlled_v2",
+        "family_id": "302DC21A6DEE",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.2153,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "302DC21A6DEE__sentence_light_controlled_v2",
+        "family_id": "302DC21A6DEE",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.2418,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 1,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.6033,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.001,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.081,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0014,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0046,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0337,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0028,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0442,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.2778,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 10,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0203,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 11,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0166,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "4943FDD99039__sentence_light_controlled_v2",
+        "family_id": "4943FDD99039",
+        "sentence_index": 12,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0003,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0225,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1467,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0398,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 4,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.6517,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0279,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1893,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0519,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0954,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0132,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 10,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0468,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 11,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0273,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 12,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1237,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 13,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0511,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 14,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0092,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 15,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.2878,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 16,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0196,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 17,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0578,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 18,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0323,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 19,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0624,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 20,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.005,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6B933220124E__sentence_light_controlled_v2",
+        "family_id": "6B933220124E",
+        "sentence_index": 21,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6C54BA5C90F9__sentence_light_controlled_v2",
+        "family_id": "6C54BA5C90F9",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0066,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6C54BA5C90F9__sentence_light_controlled_v2",
+        "family_id": "6C54BA5C90F9",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0854,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "6C54BA5C90F9__sentence_light_controlled_v2",
+        "family_id": "6C54BA5C90F9",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.002,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6C54BA5C90F9__sentence_light_controlled_v2",
+        "family_id": "6C54BA5C90F9",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1187,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "6C54BA5C90F9__sentence_light_controlled_v2",
+        "family_id": "6C54BA5C90F9",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0008,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6C54BA5C90F9__sentence_light_controlled_v2",
+        "family_id": "6C54BA5C90F9",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0098,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "6C54BA5C90F9__sentence_light_controlled_v2",
+        "family_id": "6C54BA5C90F9",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0101,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0272,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0297,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0058,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0218,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1138,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.099,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0271,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0147,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0746,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 10,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0713,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 11,
+        "true_label": "ai_assisted",
+        "predicted_positive": false,
+        "true_positive_class": true,
+        "score": 0.0302,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 12,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0182,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "7185FB63F21B__sentence_light_controlled_v2",
+        "family_id": "7185FB63F21B",
+        "sentence_index": 13,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0157,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "78A7721BE775__sentence_light_controlled_v2",
+        "family_id": "78A7721BE775",
+        "sentence_index": 1,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.134,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "78A7721BE775__sentence_light_controlled_v2",
+        "family_id": "78A7721BE775",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0216,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "78A7721BE775__sentence_light_controlled_v2",
+        "family_id": "78A7721BE775",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0188,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "78A7721BE775__sentence_light_controlled_v2",
+        "family_id": "78A7721BE775",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0503,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "78A7721BE775__sentence_light_controlled_v2",
+        "family_id": "78A7721BE775",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0313,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "78A7721BE775__sentence_light_controlled_v2",
+        "family_id": "78A7721BE775",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0976,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "78A7721BE775__sentence_light_controlled_v2",
+        "family_id": "78A7721BE775",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0738,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "78A7721BE775__sentence_light_controlled_v2",
+        "family_id": "78A7721BE775",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0278,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0959,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0258,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0445,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 4,
+        "true_label": "ai_assisted",
+        "predicted_positive": false,
+        "true_positive_class": true,
+        "score": 0.0199,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0922,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1987,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0297,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0922,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0213,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 10,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0493,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 11,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.024,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 12,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0434,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 13,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0223,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 14,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0306,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 15,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0131,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 16,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.045,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 17,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0648,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 18,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0612,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "9662807AD672__sentence_light_controlled_v2",
+        "family_id": "9662807AD672",
+        "sentence_index": 19,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.007,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 1,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.0637,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0294,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0226,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0159,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.001,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0129,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0542,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0006,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0105,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 10,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0401,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 11,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0087,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 12,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0075,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "9B3DE2166927__sentence_light_controlled_v2",
+        "family_id": "9B3DE2166927",
+        "sentence_index": 13,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0122,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0621,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.2018,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0213,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0615,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0012,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1171,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0041,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0444,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0254,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 10,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.1102,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "BEE1B9179E2C__sentence_light_controlled_v2",
+        "family_id": "BEE1B9179E2C",
+        "sentence_index": 11,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0019,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0652,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0432,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1374,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1024,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0849,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0457,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1811,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1375,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0835,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 10,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0102,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 11,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.1755,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 12,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0571,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 13,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0315,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 14,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0726,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 15,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0576,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "E7CBE8FEFCDF__sentence_light_controlled_v2",
+        "family_id": "E7CBE8FEFCDF",
+        "sentence_index": 16,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0321,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "ECF63F6AB48E__sentence_light_controlled_v2",
+        "family_id": "ECF63F6AB48E",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1381,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "ECF63F6AB48E__sentence_light_controlled_v2",
+        "family_id": "ECF63F6AB48E",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0099,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "ECF63F6AB48E__sentence_light_controlled_v2",
+        "family_id": "ECF63F6AB48E",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0738,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "ECF63F6AB48E__sentence_light_controlled_v2",
+        "family_id": "ECF63F6AB48E",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1324,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "ECF63F6AB48E__sentence_light_controlled_v2",
+        "family_id": "ECF63F6AB48E",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.046,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "ECF63F6AB48E__sentence_light_controlled_v2",
+        "family_id": "ECF63F6AB48E",
+        "sentence_index": 6,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.5626,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "ECF63F6AB48E__sentence_light_controlled_v2",
+        "family_id": "ECF63F6AB48E",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.2065,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "EE6826C8E470__sentence_light_controlled_v2",
+        "family_id": "EE6826C8E470",
+        "sentence_index": 1,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.2714,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "EE6826C8E470__sentence_light_controlled_v2",
+        "family_id": "EE6826C8E470",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0141,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "EE6826C8E470__sentence_light_controlled_v2",
+        "family_id": "EE6826C8E470",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.172,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "EE6826C8E470__sentence_light_controlled_v2",
+        "family_id": "EE6826C8E470",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0461,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "EE6826C8E470__sentence_light_controlled_v2",
+        "family_id": "EE6826C8E470",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.013,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "EE6826C8E470__sentence_light_controlled_v2",
+        "family_id": "EE6826C8E470",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0032,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "EE6826C8E470__sentence_light_controlled_v2",
+        "family_id": "EE6826C8E470",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0627,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "EE6826C8E470__sentence_light_controlled_v2",
+        "family_id": "EE6826C8E470",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0931,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "EE6826C8E470__sentence_light_controlled_v2",
+        "family_id": "EE6826C8E470",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0174,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "EE6DDAF8FD20__sentence_light_controlled_v2",
+        "family_id": "EE6DDAF8FD20",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0012,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "EE6DDAF8FD20__sentence_light_controlled_v2",
+        "family_id": "EE6DDAF8FD20",
+        "sentence_index": 2,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.0955,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "EE6DDAF8FD20__sentence_light_controlled_v2",
+        "family_id": "EE6DDAF8FD20",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.2046,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "EE6DDAF8FD20__sentence_light_controlled_v2",
+        "family_id": "EE6DDAF8FD20",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0499,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "EE6DDAF8FD20__sentence_light_controlled_v2",
+        "family_id": "EE6DDAF8FD20",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0217,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "EE6DDAF8FD20__sentence_light_controlled_v2",
+        "family_id": "EE6DDAF8FD20",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0642,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "EE6DDAF8FD20__sentence_light_controlled_v2",
+        "family_id": "EE6DDAF8FD20",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.1216,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "EE6DDAF8FD20__sentence_light_controlled_v2",
+        "family_id": "EE6DDAF8FD20",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0187,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 1,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.031,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 2,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0427,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 3,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0646,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 4,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.0617,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 5,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0397,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 6,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.032,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 7,
+        "true_label": "human",
+        "predicted_positive": true,
+        "true_positive_class": false,
+        "score": 0.3152,
+        "correct": false
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 8,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0063,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 9,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0122,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 10,
+        "true_label": "human",
+        "predicted_positive": false,
+        "true_positive_class": false,
+        "score": 0.0229,
+        "correct": true
+      },
+      {
+        "essay_sample_id": "F53DA3118668__sentence_light_controlled_v2",
+        "family_id": "F53DA3118668",
+        "sentence_index": 11,
+        "true_label": "ai_assisted",
+        "predicted_positive": true,
+        "true_positive_class": true,
+        "score": 0.1138,
+        "correct": true
+      }
+    ],
+    "feature_ablation_train_validation_only": {
+      "all_29_features": {
+        "n_features": 29,
+        "chosen_C": 166.81005372000558,
+        "validation_at_0.5": {
+          "threshold": 0.5,
+          "n": 264,
+          "correct": 243,
+          "accuracy": 0.9204545454545454,
+          "precision_machine": 0.0,
+          "recall_machine": 0.0,
+          "f1_machine": 0.0,
+          "precision_human": 0.9239543726235742,
+          "recall_human": 0.9959016393442623,
+          "f1_human": 0.9585798816568047,
+          "confusion_matrix": {
+            "tn": 243,
+            "fp": 1,
+            "fn": 20,
+            "tp": 0
+          }
+        }
+      },
+      "stylometric_only_23": {
+        "n_features": 23,
+        "chosen_C": 21.54434690031882,
+        "validation_at_0.5": {
+          "threshold": 0.5,
+          "n": 264,
+          "correct": 244,
+          "accuracy": 0.9242424242424242,
+          "precision_machine": 0.0,
+          "recall_machine": 0.0,
+          "f1_machine": 0.0,
+          "precision_human": 0.9242424242424242,
+          "recall_human": 1.0,
+          "f1_human": 0.9606299212598425,
+          "confusion_matrix": {
+            "tn": 244,
+            "fp": 0,
+            "fn": 20,
+            "tp": 0
+          }
+        }
+      },
+      "lm_only_6": {
+        "n_features": 6,
+        "chosen_C": 0.0001,
+        "validation_at_0.5": {
+          "threshold": 0.5,
+          "n": 264,
+          "correct": 244,
+          "accuracy": 0.9242424242424242,
+          "precision_machine": 0.0,
+          "recall_machine": 0.0,
+          "f1_machine": 0.0,
+          "precision_human": 0.9242424242424242,
+          "recall_human": 1.0,
+          "f1_human": 0.9606299212598425,
+          "confusion_matrix": {
+            "tn": 244,
+            "fp": 0,
+            "fn": 20,
+            "tp": 0
+          }
+        }
+      },
+      "combined_minus_lm_within_sentence_5": {
+        "n_features": 24,
+        "chosen_C": 21.54434690031882,
+        "validation_at_0.5": {
+          "threshold": 0.5,
+          "n": 264,
+          "correct": 244,
+          "accuracy": 0.9242424242424242,
+          "precision_machine": 0.0,
+          "recall_machine": 0.0,
+          "f1_machine": 0.0,
+          "precision_human": 0.9242424242424242,
+          "recall_human": 1.0,
+          "f1_human": 0.9606299212598425,
+          "confusion_matrix": {
+            "tn": 244,
+            "fp": 0,
+            "fn": 20,
+            "tp": 0
+          }
+        }
+      },
+      "combined_minus_neighboring_sentence_predictability_1": {
+        "n_features": 28,
+        "chosen_C": 21.54434690031882,
+        "validation_at_0.5": {
+          "threshold": 0.5,
+          "n": 264,
+          "correct": 243,
+          "accuracy": 0.9204545454545454,
+          "precision_machine": 0.0,
+          "recall_machine": 0.0,
+          "f1_machine": 0.0,
+          "precision_human": 0.9239543726235742,
+          "recall_human": 0.9959016393442623,
+          "f1_human": 0.9585798816568047,
+          "confusion_matrix": {
+            "tn": 243,
+            "fp": 1,
+            "fn": 20,
+            "tp": 0
+          }
+        }
+      }
+    },
+    "primary_model_coefficients": [
+      {
+        "feature": "lm_mean_token_count",
+        "standardized_coefficient": -2.8342
+      },
+      {
+        "feature": "stylo_mean_char_count",
+        "standardized_coefficient": 2.4193
+      },
+      {
+        "feature": "lm_mean_perplexity",
+        "standardized_coefficient": -1.7031
+      },
+      {
+        "feature": "stylo_sentence_length_std",
+        "standardized_coefficient": -1.2718
+      },
+      {
+        "feature": "stylo_sentence_length_mean",
+        "standardized_coefficient": 1.1635
+      },
+      {
+        "feature": "stylo_mean_word_count",
+        "standardized_coefficient": -0.8218
+      },
+      {
+        "feature": "stylo_mean_punctuation_count",
+        "standardized_coefficient": 0.7235
+      },
+      {
+        "feature": "stylo_sentence_length_cv",
+        "standardized_coefficient": 0.7098
+      },
+      {
+        "feature": "stylo_sentence_count",
+        "standardized_coefficient": -0.4563
+      },
+      {
+        "feature": "stylo_repeated_trigram_ratio",
+        "standardized_coefficient": -0.4486
+      },
+      {
+        "feature": "stylo_mean_avg_word_length",
+        "standardized_coefficient": 0.4358
+      },
+      {
+        "feature": "stylo_mean_dependency_depth",
+        "standardized_coefficient": 0.3804
+      },
+      {
+        "feature": "stylo_mean_adv_ratio",
+        "standardized_coefficient": -0.3383
+      },
+      {
+        "feature": "stylo_mean_noun_ratio",
+        "standardized_coefficient": -0.3095
+      },
+      {
+        "feature": "lm_mean_log_prob_variance",
+        "standardized_coefficient": -0.2718
+      },
+      {
+        "feature": "stylo_repeated_bigram_ratio",
+        "standardized_coefficient": 0.2665
+      },
+      {
+        "feature": "stylo_mean_verb_ratio",
+        "standardized_coefficient": 0.2105
+      },
+      {
+        "feature": "lm_mean_median_log_prob",
+        "standardized_coefficient": -0.205
+      },
+      {
+        "feature": "lm_mean_predictability_delta",
+        "standardized_coefficient": 0.1904
+      },
+      {
+        "feature": "stylo_moving_average_ttr",
+        "standardized_coefficient": -0.1363
+      },
+      {
+        "feature": "stylo_mean_adj_ratio",
+        "standardized_coefficient": -0.1281
+      },
+      {
+        "feature": "stylo_short_sentence_ratio",
+        "standardized_coefficient": 0.0909
+      },
+      {
+        "feature": "lm_mean_mean_log_prob",
+        "standardized_coefficient": -0.0867
+      },
+      {
+        "feature": "stylo_medium_sentence_ratio",
+        "standardized_coefficient": -0.0591
+      },
+      {
+        "feature": "stylo_repeated_sentence_opening_ratio",
+        "standardized_coefficient": 0.0467
+      },
+      {
+        "feature": "stylo_mean_pronoun_ratio",
+        "standardized_coefficient": -0.0348
+      },
+      {
+        "feature": "stylo_long_sentence_ratio",
+        "standardized_coefficient": -0.0304
+      },
+      {
+        "feature": "stylo_type_token_ratio",
+        "standardized_coefficient": -0.0295
+      },
+      {
+        "feature": "stylo_rare_word_ratio",
+        "standardized_coefficient": -0.0114
+      }
+    ],
+    "top1_localization": {
+      "validation": {
+        "split": "validation",
+        "n_essays_with_a_locatable_positive_sentence": 20,
+        "n_top1_correct": 5,
+        "top1_accuracy": 0.25
+      },
+      "test": {
+        "split": "test",
+        "n_essays_with_a_locatable_positive_sentence": 15,
+        "n_top1_correct": 9,
+        "top1_accuracy": 0.6
+      }
+    }
+  },
+  "missing_value_handling": {
+    "note": "predictability_delta undefined for a sentence with no scorable preceding sentence -- excluded, not imputed, consistent with language_model.py's existing philosophy.",
+    "total_raw_sentences_across_127_ai_assisted_essays": 1707,
+    "sentences_excluded": 129,
+    "sentences_retained": 1578,
+    "essays_losing_their_positive_label_entirely": 8,
+    "note_on_the_8": "each has its ai-modified sentence at index 0 (the essay's first sentence, structurally undefined predictability_delta) -- see reports/EXP-003B.md"
+  },
+  "reproducibility": {
+    "dataset": "PRIMARY-DATASET-v1",
+    "random_seed": 42,
+    "sklearn_version": "1.9.0",
+    "python_version": "3.14.6",
+    "essay_feature_extraction": "scripts/exp003b_extract_features.py:build_essay_level_features",
+    "sentence_feature_extraction": "scripts/exp003b_extract_features.py:build_sentence_level_features",
+    "modeling_script": "scripts/run_exp003b.py"
+  }
+}

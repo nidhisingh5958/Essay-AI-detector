@@ -308,6 +308,55 @@ some paragraph samples' screen inputs may have been truncated in a way
 the numbers above don't reflect. The fix applies going forward, starting
 with EXP-DATA-001-R3.
 
+## Third Validation, at Scale (PRIMARY-DATASET-v1, 2026-08-14/15) — sentence-level miss rate materially worse than previously documented
+
+**Reported plainly, consistent with this section's existing practice of
+not softening bad news.** The 150-family primary dataset construction
+reviewed all 141 resolvable-span `sentence_light_controlled_v2` samples
+— by far the largest single batch this screen has been checked against
+(previously: 35 calibration, 37 R2 out-of-sample, 25 R3-sentence-light).
+Result: **8 real `"changed"` samples, of which 6 (75%) were labeled
+`likely_preserved`.**
+
+This is a substantially worse miss rate than every prior sentence-level
+check: EXP-DATA-001-R3-sentence-light showed 0/1 missed at n=25 (the
+single changed sample there was a numeric substitution, caught cleanly
+by the fact-check component). At n=141, the changed cases were
+dominated by a failure type fact-check cannot touch and embedding
+similarity does not reliably flag: **meaning reversal inside an
+otherwise fluent, structurally-similar sentence** — a full position
+reversal ("should not be allowed" → "should not be discouraged"), a
+dropped negation ("not take things serious" → "handle things
+seriously"), a causal-direction flip ("because" → "despite"), and an
+agent/subject substitution ("Schools should offer..." → "Students
+should offer..."). None of these touch a number or named entity; all
+scored high enough embedding similarity to clear the `likely_preserved`
+threshold.
+
+**This is the same blind spot already documented for paragraph-level
+data (see "Second Out-of-Sample Validation," EXP-DATA-001-R3) — now
+confirmed to also apply at the sentence level, and at a materially
+higher rate (75%, vs. paragraph-level's 2/3 = 67%) than the single
+prior sentence-level data point suggested.** The earlier framing —
+"the safety property has held for every numeric/entity substitution
+seen so far... has now failed, specifically and only, for
+[paragraph-level] reversals" — is corrected here: it was never
+sentence-level-safe in general, only safe for the *specific* failure
+type (numeric substitution) that happened to be the only sentence-level
+`"changed"` case observed before this round. Numeric/entity
+substitution detection itself remains reliable (0 misses across every
+round, including this one — see the dataset construction report §8 for
+the full disagreement table). Reversal-type drift detection does not,
+at either granularity.
+
+**Practical consequence, concretely demonstrated, not hypothetical**:
+constructing PRIMARY-DATASET-v1 by trusting `likely_preserved` alone
+would have let 6 real `"changed"` sentence-level samples and 3
+`"questionable"` ones into the high-confidence benchmark as false
+positive ground truth. Mandatory human review of every sample —
+already this project's stated policy — is what caught them. Full
+detail: [reports/FINAL-DATASET-CONSTRUCTION.md](../../reports/FINAL-DATASET-CONSTRUCTION.md) §7–8.
+
 ## Trade-offs
 
 This screen is deliberately **conservative**: it minimizes false
@@ -335,21 +384,26 @@ Negative:
 
 ## Revisit When
 
-1. If the sentence-level validation experiment (using this screen on a
-   fresh sample) finds a similar or worse false-negative rate, the
-   thresholds — or the decision to rely on embedding similarity + fact
-   checks at all, rather than adding NLI (Alternative B) — should be
-   revisited with that new evidence.
+1. ~~If the sentence-level validation experiment (using this screen on a
+   fresh sample) finds a similar or worse false-negative rate~~ —
+   **done and triggered, 2026-08-14/15**: PRIMARY-DATASET-v1's 141-sample
+   sentence-level review found a WORSE rate than the R3 validation this
+   item anticipated (6/8 = 75% of changed samples missed, vs. 0/1 in
+   R3) — see "Third Validation, at Scale" above. NLI is now warranted by
+   two independent rounds of evidence at two different granularities,
+   not one. **Still not implemented** — per explicit instruction not to
+   add NLI reactively just to try to recover this decision's earlier,
+   now-corrected safety framing. Documented here as a possible future
+   screening enhancement; the current, standing conclusion is that
+   automated semantic models are useful for triage but cannot currently
+   serve as final semantic ground truth (see final-decision-guide.md).
 2. ~~If claim/stance-reversal drift (not caught by either current
    signal) is observed directly, escalate to Alternative B~~ —
-   **triggered, 2026-08-13**: EXP-DATA-001-R3 observed exactly this (2
-   paragraph-level samples, priority reversal and a claim-drop-plus-
-   location-flip, neither touching a number or entity). NLI (Alternative
-   B) is now a live candidate to evaluate, not just a deferred option —
-   not implemented in this round per the explicit instruction not to
-   scale or add new mechanisms beyond what was authorized; a future
-   round should evaluate it against these two real failure cases plus
-   the DB12BA4206B8-family cases.
+   **triggered, 2026-08-13, and reconfirmed at scale 2026-08-14/15**:
+   first at the paragraph level (EXP-DATA-001-R3, 2 samples), now also
+   at the sentence level and at higher frequency (PRIMARY-DATASET-v1, 6
+   samples). NLI (Alternative B) is a well-evidenced future candidate;
+   not implemented in this round per explicit instruction.
 3. Never: loosen the fact-check flag's escalation-to-review behavior
    just to reduce the `needs_review` rate — that would reopen the exact
    gap this decision closes.

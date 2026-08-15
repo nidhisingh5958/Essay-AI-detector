@@ -1,15 +1,33 @@
 # Primary Dataset Construction Plan
 
-**Status: DESIGN ONLY. Not executed.** Per explicit instruction, this
-document specifies how the first primary benchmark dataset will be
-built once authorized — no generation for this dataset has started.
-Everything below is a proposal for review, not a completed action.
+**Status: EXECUTED, 2026-08-14/15 — PRIMARY-DATASET-v1.** This document
+originally specified the plan below; it has now been carried out
+exactly as designed (150 fresh seeds, categories A/B/C, family-level
+splits, mandatory review), with **no methodology changes** made during
+execution. The design content below is kept as the record of what was
+planned; actual results, which differ from the projections in a few
+places (most notably §7's acceptance-rate projection and the automated
+screen's reliability at scale), are in
+[reports/FINAL-DATASET-CONSTRUCTION.md](../reports/FINAL-DATASET-CONSTRUCTION.md)
+— the authoritative source for what actually happened. **Detector work
+has NOT started** — construction was followed by a stop-for-review
+checkpoint, per explicit instruction.
+
+**Actual results summary** (see the construction report for full
+detail): 150 families, 0 leakage/split/duplicate violations, 425
+samples in the final inclusion manifest (150 human + 148 full_ai + 127
+`ai_assisted`). Sentence-light semantic preservation: 127/141 (90.1%)
+preserved, 6/141 questionable, 8/141 changed — a real, larger-sample
+drift rate than EXP-DATA-001-R3 showed (4%), reported honestly. A
+significant new finding: the DEC-012 automated screen missed 6 of the 8
+real "changed" samples (75%) — see DEC-012's "Third Validation, at
+Scale" section.
+
 **Required prerequisite satisfied 2026-08-14**: EXP-DATA-001-R4's
 full_ai pre-scale regression found no substantive issue (0 leakage
 flags, 0 self-reference flags, 10/10 QC-clean, 0 family-split
 violations, clean topic/prompt adherence) — see
 [reports/EXP-DATA-001-R4-full-ai-regression.md](../reports/EXP-DATA-001-R4-full-ai-regression.md).
-This plan itself is still not executed pending review of that result.
 
 See [final-decision-guide.md](final-decision-guide.md) for a one-page
 summary of what's in/out and why, and
@@ -67,19 +85,26 @@ appropriate (smaller for a faster first pass, larger for a more
 statistically robust benchmark), only `N_SEEDS` and the exclusion set
 change.
 
-### Expected output composition (based on observed rates, not guaranteed)
+### Output composition — projected vs. actual
 
-| | Generated | Expected after QC + semantic review |
-|---|---|---|
-| `human` | 150 | 150 (no generation, no attrition) |
-| `full_ai` (`machine`) | 150 | ~150 (EXP-DATA-001 saw 0 real QC failures; some small attrition possible on fresh seeds, not assumed to be exactly 0) |
-| `sentence_light_controlled_v2` (`ai_assisted`) | 150 | **~132 (88%) enter the high-confidence dataset as `preserved`**; ~12 (8%) questionable and ~6 (4%) changed are set aside — see §7, not discarded |
+| | Generated | Projected (pre-construction) | **Actual** |
+|---|---|---|---|
+| `human` | 150 | 150 (no attrition) | **150** |
+| `full_ai` (`machine`) | 150 | ~150 | **148** (2 excluded: genuine `ai_self_reference`) |
+| `sentence_light_controlled_v2` (`ai_assisted`) | 150 | ~132 (88%) preserved, projected from R3's n=25 | **127** (90.1% of 141 reviewable; 9 QC-rejected before review, 6 questionable + 8 changed set aside — see §7 and [reports/FINAL-DATASET-CONSTRUCTION.md](../reports/FINAL-DATASET-CONSTRUCTION.md)) |
+| **Total benchmark** | 450 | ~432 | **425** |
 
-**These are projections from EXP-DATA-001-R3's observed rates (88%/8%/4%
-on n=25), not promises.** The actual post-review counts will be
-reported honestly once the review is done, exactly as every prior round
-in this project has been reported — including if the rate differs from
-this projection, the same way EXP-DATA-001-R3's paragraph batch showed
+The projection held up closely (127 actual vs. ~132 projected), but per
+explicit instruction this was never the target — the dataset reflects
+the actual measured acceptance rate, not a number resampled to match
+the projection. The below (original projection framing) is kept for
+context on how the estimate was derived:
+
+**These were projections from EXP-DATA-001-R3's observed rates (88%/8%/4%
+on n=25), not promises.** The actual post-review counts are now
+reported above, exactly as every prior round in this project has been
+reported — including that the rate differs somewhat from this
+projection, the same way EXP-DATA-001-R3's paragraph batch showed
 real, disclosed variance from EXP-DATA-001-R2's.
 
 ## 3. Family construction

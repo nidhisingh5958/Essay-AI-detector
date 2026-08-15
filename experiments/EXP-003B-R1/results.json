@@ -1,0 +1,574 @@
+{
+  "dataset": "experiments/EXP-003B/features_sentence.jsonl (unmodified)",
+  "A_all_29": {
+    "group_name": "A_all_29",
+    "n_features": 29,
+    "features": [
+      "stylo_sentence_count",
+      "stylo_sentence_length_mean",
+      "stylo_sentence_length_std",
+      "stylo_sentence_length_cv",
+      "stylo_short_sentence_ratio",
+      "stylo_medium_sentence_ratio",
+      "stylo_long_sentence_ratio",
+      "stylo_mean_word_count",
+      "stylo_mean_char_count",
+      "stylo_mean_punctuation_count",
+      "lm_mean_token_count",
+      "stylo_type_token_ratio",
+      "stylo_moving_average_ttr",
+      "stylo_rare_word_ratio",
+      "stylo_repeated_bigram_ratio",
+      "stylo_repeated_trigram_ratio",
+      "stylo_repeated_sentence_opening_ratio",
+      "stylo_mean_avg_word_length",
+      "stylo_mean_noun_ratio",
+      "stylo_mean_verb_ratio",
+      "stylo_mean_adj_ratio",
+      "stylo_mean_adv_ratio",
+      "stylo_mean_pronoun_ratio",
+      "stylo_mean_dependency_depth",
+      "lm_mean_mean_log_prob",
+      "lm_mean_median_log_prob",
+      "lm_mean_log_prob_variance",
+      "lm_mean_perplexity",
+      "lm_mean_predictability_delta"
+    ],
+    "chosen_C": 166.81005372000558,
+    "threshold_selection": {
+      "candidate_procedure": "sweep threshold 0.01-0.99 in 0.01 steps, maximize F1 (positive class = full_ai) on VALIDATION",
+      "chosen_threshold": 0.06,
+      "chosen_threshold_validation_f1": 0.2645,
+      "default_threshold_0.5_validation_metrics": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 243,
+        "accuracy": 0.9204545454545454,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9239543726235742,
+        "recall_human": 0.9959016393442623,
+        "f1_human": 0.9585798816568047,
+        "confusion_matrix": {
+          "tn": 243,
+          "fp": 1,
+          "fn": 20,
+          "tp": 0
+        }
+      },
+      "chosen_threshold_validation_metrics": {
+        "threshold": 0.060000000000000005,
+        "n": 264,
+        "correct": 175,
+        "accuracy": 0.6628787878787878,
+        "precision_machine": 0.15841584158415842,
+        "recall_machine": 0.8,
+        "f1_machine": 0.2644628099173554,
+        "precision_human": 0.9754601226993865,
+        "recall_human": 0.6516393442622951,
+        "f1_human": 0.7813267813267813,
+        "confusion_matrix": {
+          "tn": 159,
+          "fp": 85,
+          "fn": 4,
+          "tp": 16
+        }
+      }
+    },
+    "test_metrics_at_frozen_threshold": {
+      "threshold": 0.06,
+      "n": 197,
+      "correct": 134,
+      "accuracy": 0.6802030456852792,
+      "precision_machine": 0.17567567567567569,
+      "recall_machine": 0.8666666666666667,
+      "f1_machine": 0.29213483146067415,
+      "precision_human": 0.983739837398374,
+      "recall_human": 0.6648351648351648,
+      "f1_human": 0.7934426229508197,
+      "confusion_matrix": {
+        "tn": 121,
+        "fp": 61,
+        "fn": 2,
+        "tp": 13
+      }
+    },
+    "top1_localization": {
+      "validation": {
+        "n_essays_with_a_locatable_positive_sentence": 20,
+        "n_top1_correct": 5,
+        "top1_accuracy": 0.25
+      },
+      "test": {
+        "n_essays_with_a_locatable_positive_sentence": 15,
+        "n_top1_correct": 9,
+        "top1_accuracy": 0.6
+      }
+    }
+  },
+  "B_length_count_only": {
+    "group_name": "B_length_count_only",
+    "n_features": 11,
+    "features": [
+      "stylo_sentence_count",
+      "stylo_sentence_length_mean",
+      "stylo_sentence_length_std",
+      "stylo_sentence_length_cv",
+      "stylo_short_sentence_ratio",
+      "stylo_medium_sentence_ratio",
+      "stylo_long_sentence_ratio",
+      "stylo_mean_word_count",
+      "stylo_mean_char_count",
+      "stylo_mean_punctuation_count",
+      "lm_mean_token_count"
+    ],
+    "chosen_C": 21.54434690031882,
+    "threshold_selection": {
+      "candidate_procedure": "sweep threshold 0.01-0.99 in 0.01 steps, maximize F1 (positive class = full_ai) on VALIDATION",
+      "chosen_threshold": 0.09,
+      "chosen_threshold_validation_f1": 0.241,
+      "default_threshold_0.5_validation_metrics": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 244,
+        "accuracy": 0.9242424242424242,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9242424242424242,
+        "recall_human": 1.0,
+        "f1_human": 0.9606299212598425,
+        "confusion_matrix": {
+          "tn": 244,
+          "fp": 0,
+          "fn": 20,
+          "tp": 0
+        }
+      },
+      "chosen_threshold_validation_metrics": {
+        "threshold": 0.09,
+        "n": 264,
+        "correct": 201,
+        "accuracy": 0.7613636363636364,
+        "precision_machine": 0.15873015873015872,
+        "recall_machine": 0.5,
+        "f1_machine": 0.24096385542168675,
+        "precision_human": 0.9502487562189055,
+        "recall_human": 0.7827868852459017,
+        "f1_human": 0.8584269662921349,
+        "confusion_matrix": {
+          "tn": 191,
+          "fp": 53,
+          "fn": 10,
+          "tp": 10
+        }
+      }
+    },
+    "test_metrics_at_frozen_threshold": {
+      "threshold": 0.09,
+      "n": 197,
+      "correct": 155,
+      "accuracy": 0.7868020304568528,
+      "precision_machine": 0.2,
+      "recall_machine": 0.6,
+      "f1_machine": 0.3,
+      "precision_human": 0.9605263157894737,
+      "recall_human": 0.8021978021978022,
+      "f1_human": 0.874251497005988,
+      "confusion_matrix": {
+        "tn": 146,
+        "fp": 36,
+        "fn": 6,
+        "tp": 9
+      }
+    },
+    "top1_localization": {
+      "validation": {
+        "n_essays_with_a_locatable_positive_sentence": 20,
+        "n_top1_correct": 4,
+        "top1_accuracy": 0.2
+      },
+      "test": {
+        "n_essays_with_a_locatable_positive_sentence": 15,
+        "n_top1_correct": 6,
+        "top1_accuracy": 0.4
+      }
+    }
+  },
+  "C_non_length_combined": {
+    "group_name": "C_non_length_combined",
+    "n_features": 18,
+    "features": [
+      "stylo_type_token_ratio",
+      "stylo_moving_average_ttr",
+      "stylo_rare_word_ratio",
+      "stylo_repeated_bigram_ratio",
+      "stylo_repeated_trigram_ratio",
+      "stylo_repeated_sentence_opening_ratio",
+      "stylo_mean_avg_word_length",
+      "stylo_mean_noun_ratio",
+      "stylo_mean_verb_ratio",
+      "stylo_mean_adj_ratio",
+      "stylo_mean_adv_ratio",
+      "stylo_mean_pronoun_ratio",
+      "stylo_mean_dependency_depth",
+      "lm_mean_mean_log_prob",
+      "lm_mean_median_log_prob",
+      "lm_mean_log_prob_variance",
+      "lm_mean_perplexity",
+      "lm_mean_predictability_delta"
+    ],
+    "chosen_C": 0.3593813663804626,
+    "threshold_selection": {
+      "candidate_procedure": "sweep threshold 0.01-0.99 in 0.01 steps, maximize F1 (positive class = full_ai) on VALIDATION",
+      "chosen_threshold": 0.08,
+      "chosen_threshold_validation_f1": 0.2655,
+      "default_threshold_0.5_validation_metrics": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 244,
+        "accuracy": 0.9242424242424242,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9242424242424242,
+        "recall_human": 1.0,
+        "f1_human": 0.9606299212598425,
+        "confusion_matrix": {
+          "tn": 244,
+          "fp": 0,
+          "fn": 20,
+          "tp": 0
+        }
+      },
+      "chosen_threshold_validation_metrics": {
+        "threshold": 0.08,
+        "n": 264,
+        "correct": 181,
+        "accuracy": 0.6856060606060606,
+        "precision_machine": 0.16129032258064516,
+        "recall_machine": 0.75,
+        "f1_machine": 0.26548672566371684,
+        "precision_human": 0.9707602339181286,
+        "recall_human": 0.680327868852459,
+        "f1_human": 0.8,
+        "confusion_matrix": {
+          "tn": 166,
+          "fp": 78,
+          "fn": 5,
+          "tp": 15
+        }
+      }
+    },
+    "test_metrics_at_frozen_threshold": {
+      "threshold": 0.08,
+      "n": 197,
+      "correct": 140,
+      "accuracy": 0.7106598984771574,
+      "precision_machine": 0.18181818181818182,
+      "recall_machine": 0.8,
+      "f1_machine": 0.2962962962962963,
+      "precision_human": 0.9770992366412213,
+      "recall_human": 0.7032967032967034,
+      "f1_human": 0.8178913738019169,
+      "confusion_matrix": {
+        "tn": 128,
+        "fp": 54,
+        "fn": 3,
+        "tp": 12
+      }
+    },
+    "top1_localization": {
+      "validation": {
+        "n_essays_with_a_locatable_positive_sentence": 20,
+        "n_top1_correct": 2,
+        "top1_accuracy": 0.1
+      },
+      "test": {
+        "n_essays_with_a_locatable_positive_sentence": 15,
+        "n_top1_correct": 7,
+        "top1_accuracy": 0.4666666666666667
+      }
+    }
+  },
+  "D_lm_only": {
+    "group_name": "D_lm_only",
+    "n_features": 6,
+    "features": [
+      "lm_mean_mean_log_prob",
+      "lm_mean_median_log_prob",
+      "lm_mean_log_prob_variance",
+      "lm_mean_perplexity",
+      "lm_mean_predictability_delta",
+      "lm_mean_token_count"
+    ],
+    "chosen_C": 0.0001,
+    "threshold_selection": {
+      "candidate_procedure": "sweep threshold 0.01-0.99 in 0.01 steps, maximize F1 (positive class = full_ai) on VALIDATION",
+      "chosen_threshold": 0.01,
+      "chosen_threshold_validation_f1": 0.1408,
+      "default_threshold_0.5_validation_metrics": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 244,
+        "accuracy": 0.9242424242424242,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9242424242424242,
+        "recall_human": 1.0,
+        "f1_human": 0.9606299212598425,
+        "confusion_matrix": {
+          "tn": 244,
+          "fp": 0,
+          "fn": 20,
+          "tp": 0
+        }
+      },
+      "chosen_threshold_validation_metrics": {
+        "threshold": 0.01,
+        "n": 264,
+        "correct": 20,
+        "accuracy": 0.07575757575757576,
+        "precision_machine": 0.07575757575757576,
+        "recall_machine": 1.0,
+        "f1_machine": 0.14084507042253522,
+        "precision_human": 0.0,
+        "recall_human": 0.0,
+        "f1_human": 0.0,
+        "confusion_matrix": {
+          "tn": 0,
+          "fp": 244,
+          "fn": 0,
+          "tp": 20
+        }
+      }
+    },
+    "test_metrics_at_frozen_threshold": {
+      "threshold": 0.01,
+      "n": 197,
+      "correct": 15,
+      "accuracy": 0.07614213197969544,
+      "precision_machine": 0.07614213197969544,
+      "recall_machine": 1.0,
+      "f1_machine": 0.14150943396226415,
+      "precision_human": 0.0,
+      "recall_human": 0.0,
+      "f1_human": 0.0,
+      "confusion_matrix": {
+        "tn": 0,
+        "fp": 182,
+        "fn": 0,
+        "tp": 15
+      }
+    },
+    "top1_localization": {
+      "validation": {
+        "n_essays_with_a_locatable_positive_sentence": 20,
+        "n_top1_correct": 2,
+        "top1_accuracy": 0.1
+      },
+      "test": {
+        "n_essays_with_a_locatable_positive_sentence": 15,
+        "n_top1_correct": 2,
+        "top1_accuracy": 0.13333333333333333
+      }
+    }
+  },
+  "E_stylo_non_length_only": {
+    "group_name": "E_stylo_non_length_only",
+    "n_features": 13,
+    "features": [
+      "stylo_type_token_ratio",
+      "stylo_moving_average_ttr",
+      "stylo_rare_word_ratio",
+      "stylo_repeated_bigram_ratio",
+      "stylo_repeated_trigram_ratio",
+      "stylo_repeated_sentence_opening_ratio",
+      "stylo_mean_avg_word_length",
+      "stylo_mean_noun_ratio",
+      "stylo_mean_verb_ratio",
+      "stylo_mean_adj_ratio",
+      "stylo_mean_adv_ratio",
+      "stylo_mean_pronoun_ratio",
+      "stylo_mean_dependency_depth"
+    ],
+    "chosen_C": 0.0001,
+    "threshold_selection": {
+      "candidate_procedure": "sweep threshold 0.01-0.99 in 0.01 steps, maximize F1 (positive class = full_ai) on VALIDATION",
+      "chosen_threshold": 0.01,
+      "chosen_threshold_validation_f1": 0.1408,
+      "default_threshold_0.5_validation_metrics": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 244,
+        "accuracy": 0.9242424242424242,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9242424242424242,
+        "recall_human": 1.0,
+        "f1_human": 0.9606299212598425,
+        "confusion_matrix": {
+          "tn": 244,
+          "fp": 0,
+          "fn": 20,
+          "tp": 0
+        }
+      },
+      "chosen_threshold_validation_metrics": {
+        "threshold": 0.01,
+        "n": 264,
+        "correct": 20,
+        "accuracy": 0.07575757575757576,
+        "precision_machine": 0.07575757575757576,
+        "recall_machine": 1.0,
+        "f1_machine": 0.14084507042253522,
+        "precision_human": 0.0,
+        "recall_human": 0.0,
+        "f1_human": 0.0,
+        "confusion_matrix": {
+          "tn": 0,
+          "fp": 244,
+          "fn": 0,
+          "tp": 20
+        }
+      }
+    },
+    "test_metrics_at_frozen_threshold": {
+      "threshold": 0.01,
+      "n": 197,
+      "correct": 15,
+      "accuracy": 0.07614213197969544,
+      "precision_machine": 0.07614213197969544,
+      "recall_machine": 1.0,
+      "f1_machine": 0.14150943396226415,
+      "precision_human": 0.0,
+      "recall_human": 0.0,
+      "f1_human": 0.0,
+      "confusion_matrix": {
+        "tn": 0,
+        "fp": 182,
+        "fn": 0,
+        "tp": 15
+      }
+    },
+    "top1_localization": {
+      "validation": {
+        "n_essays_with_a_locatable_positive_sentence": 20,
+        "n_top1_correct": 3,
+        "top1_accuracy": 0.15
+      },
+      "test": {
+        "n_essays_with_a_locatable_positive_sentence": 15,
+        "n_top1_correct": 6,
+        "top1_accuracy": 0.4
+      }
+    }
+  },
+  "F_combined_non_length": {
+    "group_name": "F_combined_non_length",
+    "n_features": 18,
+    "features": [
+      "stylo_type_token_ratio",
+      "stylo_moving_average_ttr",
+      "stylo_rare_word_ratio",
+      "stylo_repeated_bigram_ratio",
+      "stylo_repeated_trigram_ratio",
+      "stylo_repeated_sentence_opening_ratio",
+      "stylo_mean_avg_word_length",
+      "stylo_mean_noun_ratio",
+      "stylo_mean_verb_ratio",
+      "stylo_mean_adj_ratio",
+      "stylo_mean_adv_ratio",
+      "stylo_mean_pronoun_ratio",
+      "stylo_mean_dependency_depth",
+      "lm_mean_mean_log_prob",
+      "lm_mean_median_log_prob",
+      "lm_mean_log_prob_variance",
+      "lm_mean_perplexity",
+      "lm_mean_predictability_delta"
+    ],
+    "chosen_C": 0.3593813663804626,
+    "threshold_selection": {
+      "candidate_procedure": "sweep threshold 0.01-0.99 in 0.01 steps, maximize F1 (positive class = full_ai) on VALIDATION",
+      "chosen_threshold": 0.08,
+      "chosen_threshold_validation_f1": 0.2655,
+      "default_threshold_0.5_validation_metrics": {
+        "threshold": 0.5,
+        "n": 264,
+        "correct": 244,
+        "accuracy": 0.9242424242424242,
+        "precision_machine": 0.0,
+        "recall_machine": 0.0,
+        "f1_machine": 0.0,
+        "precision_human": 0.9242424242424242,
+        "recall_human": 1.0,
+        "f1_human": 0.9606299212598425,
+        "confusion_matrix": {
+          "tn": 244,
+          "fp": 0,
+          "fn": 20,
+          "tp": 0
+        }
+      },
+      "chosen_threshold_validation_metrics": {
+        "threshold": 0.08,
+        "n": 264,
+        "correct": 181,
+        "accuracy": 0.6856060606060606,
+        "precision_machine": 0.16129032258064516,
+        "recall_machine": 0.75,
+        "f1_machine": 0.26548672566371684,
+        "precision_human": 0.9707602339181286,
+        "recall_human": 0.680327868852459,
+        "f1_human": 0.8,
+        "confusion_matrix": {
+          "tn": 166,
+          "fp": 78,
+          "fn": 5,
+          "tp": 15
+        }
+      }
+    },
+    "test_metrics_at_frozen_threshold": {
+      "threshold": 0.08,
+      "n": 197,
+      "correct": 140,
+      "accuracy": 0.7106598984771574,
+      "precision_machine": 0.18181818181818182,
+      "recall_machine": 0.8,
+      "f1_machine": 0.2962962962962963,
+      "precision_human": 0.9770992366412213,
+      "recall_human": 0.7032967032967034,
+      "f1_human": 0.8178913738019169,
+      "confusion_matrix": {
+        "tn": 128,
+        "fp": 54,
+        "fn": 3,
+        "tp": 12
+      }
+    },
+    "top1_localization": {
+      "validation": {
+        "n_essays_with_a_locatable_positive_sentence": 20,
+        "n_top1_correct": 2,
+        "top1_accuracy": 0.1
+      },
+      "test": {
+        "n_essays_with_a_locatable_positive_sentence": 15,
+        "n_top1_correct": 7,
+        "top1_accuracy": 0.4666666666666667
+      }
+    },
+    "note": "identical feature set to C_non_length_combined, see module docstring"
+  },
+  "reproducibility": {
+    "random_seed": 42,
+    "sklearn_version": "1.9.0",
+    "python_version": "3.14.6",
+    "source_dataset": "experiments/EXP-003B/features_sentence.jsonl",
+    "note": "PRIMARY-DATASET-v1 and EXP-003B's sentence-level dataset are UNCHANGED by this script"
+  }
+}
