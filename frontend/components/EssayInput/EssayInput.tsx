@@ -22,14 +22,16 @@ interface EssayInputProps {
 export function EssayInput({ text, onTextChange, onAnalyze, status, canAnalyze }: EssayInputProps) {
   const isAnalyzing = status === "analyzing";
 
+  const isNearLimit = text.length > MAX_CHARS * 0.9;
+
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="panel flex w-full flex-col gap-3 p-4 sm:p-5">
       <label htmlFor="essay-text" className="sr-only">
         Essay text to analyze
       </label>
       <textarea
         id="essay-text"
-        className="min-h-[280px] w-full resize-y rounded-md border border-zinc-300 bg-white p-4 font-serif text-base leading-relaxed text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+        className="min-h-[280px] w-full resize-y rounded-lg border border-zinc-200 bg-zinc-50 p-4 font-serif text-base leading-relaxed text-zinc-900 transition-colors placeholder:text-zinc-400 focus:border-accent focus:bg-white focus:outline-none focus:ring-2 focus:ring-accent/40 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:placeholder:text-zinc-600 dark:focus:bg-zinc-950"
         placeholder="Paste an admissions essay to analyze..."
         value={text}
         onChange={(e) => onTextChange(e.target.value)}
@@ -37,16 +39,25 @@ export function EssayInput({ text, onTextChange, onAnalyze, status, canAnalyze }
         disabled={isAnalyzing}
         aria-describedby="essay-char-count"
       />
-      <div className="flex items-center justify-between text-sm text-zinc-500 dark:text-zinc-400">
-        <span id="essay-char-count">
-          {text.length} / {MAX_CHARS} characters
+      <div className="flex items-center justify-between gap-3">
+        <span
+          id="essay-char-count"
+          className={`text-sm ${isNearLimit ? "text-amber-600 dark:text-amber-400" : "text-zinc-500 dark:text-zinc-400"}`}
+        >
+          {text.length.toLocaleString()} / {MAX_CHARS.toLocaleString()} characters
         </span>
         <button
           type="button"
           onClick={onAnalyze}
           disabled={!canAnalyze}
-          className="rounded-md bg-zinc-900 px-5 py-2 font-medium text-white transition-colors hover:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-600 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
+          className="flex items-center gap-2 rounded-lg bg-accent px-5 py-2 font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-500 disabled:shadow-none dark:focus-visible:ring-offset-zinc-900 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500"
         >
+          {isAnalyzing && (
+            <svg viewBox="0 0 24 24" fill="none" className="size-4 animate-spin" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" className="opacity-25" />
+              <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" className="opacity-90" />
+            </svg>
+          )}
           {isAnalyzing ? "Analyzing…" : "Analyze"}
         </button>
       </div>

@@ -13,7 +13,7 @@ export function Limitations({ limitationNote }: LimitationsProps) {
   return (
     <section
       aria-labelledby="limitations-heading"
-      className="flex flex-col gap-2 rounded-md border border-zinc-200 bg-zinc-50 p-4 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+      className="panel flex flex-col gap-2 p-4 text-sm text-zinc-700 sm:p-5 dark:text-zinc-300"
     >
       <h2 id="limitations-heading" className="font-semibold text-zinc-900 dark:text-zinc-100">
         Limitations

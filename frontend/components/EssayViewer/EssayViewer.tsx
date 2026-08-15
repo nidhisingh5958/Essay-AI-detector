@@ -25,7 +25,7 @@ export function EssayViewer({ normalizedText, sentences }: EssayViewerProps) {
 
   if (!sentences.has_evidence) {
     return (
-      <section className="flex flex-col gap-2">
+      <section className="panel flex flex-col gap-2 p-4 sm:p-5">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
           Potentially AI-assisted passages
         </h2>
@@ -41,7 +41,7 @@ export function EssayViewer({ normalizedText, sentences }: EssayViewerProps) {
   const segments = buildHighlightSegments(normalizedText, sentences.candidates);
 
   return (
-    <section className="flex flex-col gap-3">
+    <section className="panel flex flex-col gap-4 p-4 sm:p-5">
       <div className="flex flex-col gap-1">
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
           Potentially AI-assisted passages
@@ -49,7 +49,7 @@ export function EssayViewer({ normalizedText, sentences }: EssayViewerProps) {
         <p className="text-sm text-zinc-600 dark:text-zinc-400">{sentences.disclaimer}</p>
       </div>
 
-      <p className="whitespace-pre-wrap rounded-md border border-zinc-200 bg-white p-4 font-serif text-base leading-relaxed text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50">
+      <p className="whitespace-pre-wrap rounded-lg border border-zinc-200 bg-zinc-50 p-4 font-serif text-base leading-relaxed text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50">
         {segments.map((segment, i) =>
           segment.candidate ? (
             <mark
@@ -71,7 +71,7 @@ export function EssayViewer({ normalizedText, sentences }: EssayViewerProps) {
                   );
                 }
               }}
-              className="cursor-pointer rounded bg-amber-200 px-0.5 underline decoration-amber-500 decoration-2 underline-offset-2 focus:outline-none focus:ring-2 focus:ring-amber-500 dark:bg-amber-900 dark:text-amber-100"
+              className="cursor-pointer rounded bg-amber-200 px-0.5 underline decoration-amber-500 decoration-2 underline-offset-2 transition-colors hover:bg-amber-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 dark:bg-amber-900 dark:text-amber-100 dark:hover:bg-amber-800"
               title={`Rank ${segment.candidate.rank} — potentially AI-assisted passage`}
             >
               {segment.text}
@@ -82,7 +82,7 @@ export function EssayViewer({ normalizedText, sentences }: EssayViewerProps) {
         )}
       </p>
 
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col gap-2">
         {sentences.candidates.map((candidate) => (
           <CandidateDetail
             key={candidate.sentence_index}
@@ -113,20 +113,28 @@ interface CandidateDetailProps {
 
 function CandidateDetail({ candidate, expanded, onToggle }: CandidateDetailProps) {
   return (
-    <li className="rounded-md border border-zinc-200 dark:border-zinc-800">
+    <li className="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-800">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={expanded}
-        className="flex w-full items-center justify-between gap-3 px-4 py-2 text-left text-sm font-medium text-zinc-900 hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:text-zinc-100 dark:hover:bg-zinc-900"
+        className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent dark:text-zinc-100 dark:hover:bg-zinc-900"
       >
-        <span>
-          Rank {candidate.rank} · Potentially AI-assisted passage
+        <span className="flex items-center gap-2">
+          <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-100 text-xs font-semibold text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+            {candidate.rank}
+          </span>
+          Potentially AI-assisted passage
         </span>
-        <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+        <span
+          aria-hidden="true"
+          className={`text-zinc-400 transition-transform ${expanded ? "rotate-45" : ""}`}
+        >
+          +
+        </span>
       </button>
       {expanded && (
-        <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
+        <div className="border-t border-zinc-200 bg-zinc-50/60 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-950/60">
           <EvidencePanel evidence={candidate.evidence} emptyMessage="No specific evidence was available for this passage." />
         </div>
       )}

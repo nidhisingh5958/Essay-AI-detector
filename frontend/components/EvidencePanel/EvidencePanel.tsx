@@ -24,7 +24,7 @@ export function EvidencePanel({ evidence, emptyMessage }: EvidencePanelProps) {
       {evidence.map((item) => (
         <li
           key={item.feature}
-          className="rounded-md border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
+          className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300"
         >
           <span className="mb-1 block font-medium text-zinc-900 dark:text-zinc-100">
             {item.human_label}

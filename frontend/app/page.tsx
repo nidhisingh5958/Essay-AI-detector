@@ -11,13 +11,13 @@ export default function Home() {
   const analysis = useEssayAnalysis();
 
   return (
-    <div className="flex flex-1 justify-center bg-zinc-50 dark:bg-black">
-      <main className="flex w-full max-w-3xl flex-col gap-6 px-6 py-16">
-        <header className="flex flex-col gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+    <div className="flex flex-1 justify-center bg-background">
+      <main className="flex w-full max-w-3xl flex-col gap-8 px-6 py-12 sm:py-16">
+        <header className="flex flex-col gap-3">
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
             AI Detector for Admissions Essays
           </h1>
-          <p className="text-zinc-600 dark:text-zinc-400">
+          <p className="max-w-2xl text-zinc-600 dark:text-zinc-400">
             Paste an essay to see measurable, sentence-level evidence about its writing
             characteristics. This tool reports statistical patterns — it does not establish
             authorship with certainty.
@@ -41,7 +41,7 @@ export default function Home() {
         )}
 
         {analysis.status === "success" && analysis.result && (
-          <div className="flex flex-col gap-8">
+          <div className="animate-fade-in-up flex flex-col gap-6">
             <ResultsSummary essay={analysis.result.essay} />
             <EssayViewer
               normalizedText={analysis.result.normalized_text}
